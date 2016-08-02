@@ -2,6 +2,11 @@
 
 import sys 
 
+from lib.config import IniFile
+from lib.model import Model
+from lib.integrator import Integrator
+from lib.sampler import Sampler
+from lib.output import Output
 
 def main( inistr ):
     
@@ -14,7 +19,26 @@ def main( inistr ):
     
     comm = MPI.COMM_WORLD 
     
-    print "Hello world"  
+    ini = IniFile( inistr )
+    
+    myModel = Model( ini, comm )
+    myModel.config()
+    
+    myOutput = Output( ini, comm )
+    myOutput.config()
+    
+    myIntegrator = Integrator( ini, comm, myModel )
+    myIntegrator.config()
+    
+    mySampler = Sampler( ini, comm, myModel, myIntegrator, myOutput )
+    mySampler.config()
+    
+    mySampler.run()
+    
+    myOutput.save()
+     
+    
+    print "Done!"
 
 
 

@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# temp files
+*~
+test/
+
 # C extensions
 *.so
 
@@ -14,8 +18,7 @@ develop-eggs/
 dist/
 downloads/
 eggs/
-.eggs/
-lib/
+.eggs/ 
 lib64/
 parts/
 sdist/
