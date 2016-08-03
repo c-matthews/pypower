@@ -97,12 +97,12 @@ class ParRep:
                 # DEPHASE STAGE
                 ####
                 
-                F = np.tile(f, (self.walkers,1) ).T
-                A = np.tile(a, (self.walkers,1) ).T
-                M = np.tile(m, (self.walkers,1) ).T
                 
                 if (myid==0) and time<self.maxtime:
                     jj = 0  
+                    F = np.tile(f, (self.walkers,1) ).T
+                    A = np.tile(a, (self.walkers,1) ).T
+                    M = np.tile(m, (self.walkers,1) ).T
                     
                     for ii in np.arange( self.walkers ):
                         f = F[:,ii]
@@ -128,16 +128,25 @@ class ParRep:
                 ####
                 # PARALLEL STAGE
                 ####
-
-                FF = self.comm.scatter( F  , root = 0 )
-                AA = self.comm.scatter( A  , root = 0 )
-                MM = self.comm.scatter( M  , root = 0 )
+                
+                if (myid==0):
+                    FF = [F[:, np.arange(jj, self.walkers, self.comm.Get_size())  for jj in np.arange(self.comm.Get_size() )  ] 
+                    AA = [A[:, np.arange(jj, self.walkers, self.comm.Get_size())  for jj in np.arange(self.comm.Get_size() )  ] 
+                    MM = [M[:, np.arange(jj, self.walkers, self.comm.Get_size())  for jj in np.arange(self.comm.Get_size() )  ] 
+                else:
+                    FF= None
+                    AA = None
+                    MM = None
+                    
+                F = self.comm.scatter( FF  , root = 0 )
+                A = self.comm.scatter( AA  , root = 0 )
+                M = self.comm.scatter( MM  , root = 0 )
                 time = self.comm.bcast( time , root=0 )
                 gamma = self.comm.bcast( gamma , root=0 )
 
-                print [myid , np.shape(FF) ]
+                print [myid , np.shape(F) ]
 
-                ntasks = np.shape(FF)[1]
+                ntasks = np.shape(F)[1]
                     
                 event = -1
                 gchk  = -1
@@ -146,7 +155,7 @@ class ParRep:
                     
                     for ii in np.arange( ntasks ):
                         
-                        FF[:,ii], AA[:,ii] , M[:,ii],_,_,_,_,_,jj,g,nls = self.ig.adv( FF[:,ii], AA[:,ii] , M[:,ii] , self.pstep , gamma ) 
+                        F[:,ii], A[:,ii] , M[:,ii],_,_,_,_,_,jj,g,nls = self.ig.adv( F[:,ii], A[:,ii] , M[:,ii] , self.pstep , gamma ) 
                     
                         if (jj<self.pstep):
                             event = myid
@@ -160,10 +169,10 @@ class ParRep:
                         jj = self.comm.bcast( jj , root= gchk )
                         gamma = self.comm.bcast( g , root= gchk )
                         nls = self.comm.bcast( nls , root= gchk )
-                        f = self.comm.bcast( FF[:,ii] , root= gchk )
-                        a = self.comm.bcast( AA[:,ii] , root= gchk )
-                        m = self.comm.bcast( MM[:,ii] , root= gchk )
-                        time += self.ig.dt * self.pstep * gchk + jj * self.ig.dt
+                        f = self.comm.bcast( F[:,ii] , root= gchk )
+                        a = self.comm.bcast( A[:,ii] , root= gchk )
+                        m = self.comm.bcast( M[:,ii] , root= gchk )
+                        time += self.ig.dt * self.pstep * ( gchk  / self.comm.Get_size() ) + jj * self.ig.dt
                         break
                     
                 
@@ -174,3 +183,5 @@ class ParRep:
             
                 
             self.output.AddOutput( repnum , [], [], [],[],[], G, T, LS )
+            
+            
