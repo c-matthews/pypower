@@ -39,12 +39,13 @@ class TrajSampler:
             EN = np.zeros( (  self.steps ) )
             LE = np.zeros( ( self.model.nline, self.steps ) )
             G = np.zeros( ( self.model.nline, self.steps ) )
+            LS = np.ones( (  self.steps ) )
             
             
             while ii < self.steps :
                  
                 
-                f,a,m,F,A,M,E,L,jj,g = self.ig.adv( f, a , m , self.steps - ii , gamma )
+                f,a,m,F,A,M,E,L,jj,g,nls = self.ig.adv( f, a , m , self.steps - ii , gamma )
                 
                 FF[:,ii:] = np.copy(F)
                 AA[:,ii:] = np.copy(A)
@@ -52,13 +53,16 @@ class TrajSampler:
                 EN[ii:] = np.copy(E)
                 LE[:,ii:] = np.copy(L)
                 G[:,ii:] = np.tile(gamma, (self.steps-ii,1) ).T
-                
-                
                 ii += jj
+                
+                
+                if nls>=0:
+                    LS[ii:] = nls
+                
                 
                 gamma = g
                 
             T = np.arange(1, self.steps+1) * self.ig.dt
             
-            self.output.AddOutput( task, FF, AA, MM,EN,LE, G, T )
+            self.output.AddOutput( task, FF, AA, MM,EN,LE, G, T, LS )
             

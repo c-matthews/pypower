@@ -18,6 +18,7 @@ class Output:
         self.SaveLineEnergy = ini.getboolean("output","savelineenergy",True) 
         self.SaveGamma = ini.getboolean("output","savegamma",True) 
         self.SaveTime = ini.getboolean("output","savetime",True) 
+        self.SaveLoad = ini.getboolean("output","saveload",True) 
 
         self.PrintFreq = ini.getint("output","printfreq",0)
         self.PrintTime = ini.getint("output","printtime",0)
@@ -56,9 +57,11 @@ class Output:
         self.LEList = list()
         self.GList = list()
         self.TList = list()
+        self.LSList = list()
         
         self.lastprinttime = 0
         self.lastprintsteps = 0
+         
                     
         
         
@@ -70,34 +73,38 @@ class Output:
         for ii, id in enumerate( self.IDList):
 
             if (self.SaveTraj):
-                path = self.OutputPath + "/f." + str(id)
+                path = self.OutputPath + "/f." +  str(id)
                 np.savetxt(path, self.FList[ii] , fmt="%.4e") 
-                path = self.OutputPath + "/a." + str(id)
+                path = self.OutputPath + "/a." +  str(id)
                 np.savetxt(path, self.AList[ii], fmt="%.4e" ) 
-                path = self.OutputPath + "/m." + str(id)
+                path = self.OutputPath + "/m." +  str(id)
                 np.savetxt(path, self.MList[ii] , fmt="%.4e") 
 
             if (self.SaveEnergy):
-                path = self.OutputPath + "/e." + str(id)
+                path = self.OutputPath + "/e." +  str(id)
                 np.savetxt(path, self.ENList[ii] , fmt="%.5e") 
 
             if (self.SaveLineEnergy):
-                path = self.OutputPath + "/le." + str(id)
+                path = self.OutputPath + "/le." +  str(id)
                 np.savetxt(path, self.LEList[ii] , fmt="%.4e") 
 
             if (self.SaveGamma):
-                path = self.OutputPath + "/g." + str(id)
+                path = self.OutputPath + "/g." +  str(id)
                 np.savetxt(path, self.GList[ii] , fmt="%d") 
 
             if (self.SaveTime):
-                path = self.OutputPath + "/t." + str(id)
+                path = self.OutputPath + "/t." +  str(id)
                 np.savetxt(path, self.TList[ii] , fmt="%.6e") 
+
+            if (self.SaveLoad):
+                path = self.OutputPath + "/ls." +  str(id)
+                np.savetxt(path, self.LSList[ii] , fmt="%.4e") 
                 
                 
             
         
 
-    def AddOutput(self, id , F, A , M, EN, LE, G, T ):
+    def AddOutput(self, id , F, A , M, EN, LE, G, T, LS ):
 
         self.IDList.append( id )
 
@@ -117,8 +124,11 @@ class Output:
 
         if (self.SaveTime):
             self.TList.append( np.copy( T[::self.ostep] ) ) 
+
+        if (self.SaveLoad):
+            self.LSList.append( np.copy( LS[::self.ostep] ) ) 
             
-             
+              
         
         
     

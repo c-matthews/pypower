@@ -31,6 +31,7 @@ class Integrator:
         LE = np.zeros( (self.model.nline, N) )
         
         ii = 0
+        nls = -1
         
         while ii<N :
             
@@ -53,10 +54,10 @@ class Integrator:
             if io: 
                 print "fail!"
                 print 1+np.arange(self.model.nline)[ol] 
-                g = self.model.removeline(g , ol )
+                g, nls = self.model.removeline(g , ol )
                 break
             
-        return f,a,m,F,A,M,EN,LE,ii,g
+        return f,a,m,F,A,M,EN,LE,ii,g, nls
             
             
     def step(self, f, a, m, yb):

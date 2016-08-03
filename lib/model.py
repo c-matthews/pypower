@@ -51,10 +51,13 @@ class Model:
             self.AA[ i1 , jj ] = 1.
             self.AA[ i2 , jj ] = -1.
             
+        self.pq_data[ self.slacklist-1 , : ] = [0,0,0]
         self.pq_data[ self.slacklist-1 , : ] = -np.sum( self.pq_data, axis=0 )
+        self.pq_data *= self.pq_scale 
+        self.pq_data[ self.loadlist -1 ] *= self.loadscale
         self.snet = self.pq_data[:,0] + self.pq_data[:,1] - 1j * self.pq_data[:,2]
-        self.snet *= self.pq_scale 
-        self.snet[ self.loadlist -1 ] *= self.loadscale
+        self.Pload = self.pq_data[:,1] 
+        self.Pload[ self.slacklist-1 ] = 0
         self.P = self.snet.real
         self.Q = self.snet.imag
         self.Q[ self.genlist-1 ] = 0
@@ -195,11 +198,11 @@ class Model:
             
             inum[ inum==nfrom ] = nmin
             inum[ inum==nto   ] = nmin
-             
-            
-        num_islands = len( np.unique( inum ) )
-        
+               
         islack =  inum[ self.slacklist-1 ]
+        
+        nactive =   inum==islack 
+        
           
         for id,ig in enumerate(gg):
             
@@ -215,7 +218,11 @@ class Model:
             if (inum[ ito ] != islack ):
                 gg[id] = 0
              
+        #print nactive
+        #print self.Pload
         
-        return gg
+        new_ls =  np.sum( self.Pload[ nactive ] ) / np.sum( self.Pload ) 
+        
+        return gg, new_ls
             
     
