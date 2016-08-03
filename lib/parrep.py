@@ -71,6 +71,9 @@ class ParRep:
             
             time = 0.0
             
+            if (myid==0):
+                print " -- Beginning run %d." % (repnum)
+            
             while (time < self.maxtime):
                 
                 ####
@@ -79,6 +82,7 @@ class ParRep:
                 
                 if (myid==0):
                     jj = 0
+                    print "DECOR step, time: %f    events: %d." % (time, enum)
                     
                     while (jj < self.s_decor):
                         #f,a,m,F,A,M,E,L,jj,g,nls = self.ig.adv( f, a , m , self.s_decor , gamma )
@@ -92,6 +96,7 @@ class ParRep:
                         if (self.diff_g(g,gg) ):
                             G,LS,T,enum = self.add_event(G,LS,T,enum, gamma, nls, time )
                             jj=0
+                            print " - event, time: %f    events: %d." % (time, enum)
                             
                         if (time>= self.maxtime):
                             break
@@ -106,6 +111,7 @@ class ParRep:
                     F = np.tile(f, (self.walkers,1) ).T
                     A = np.tile(a, (self.walkers,1) ).T
                     M = np.tile(m, (self.walkers,1) ).T
+                    print "DEPHASE step, time: %f    events: %d." % (time, enum)
                     
                     
                     for jj in np.arange( self.s_dephase): 
@@ -139,6 +145,7 @@ class ParRep:
                     FF = [F[:, np.arange(jj, self.walkers, self.comm.Get_size())]  for jj in np.arange(self.comm.Get_size() )  ] 
                     AA = [A[:, np.arange(jj, self.walkers, self.comm.Get_size())]  for jj in np.arange(self.comm.Get_size() )  ] 
                     MM = [M[:, np.arange(jj, self.walkers, self.comm.Get_size())]  for jj in np.arange(self.comm.Get_size() )  ] 
+                    print "PARALLEL step, time: %f    events: %d." % (time, enum)
                 else:
                     FF= None
                     AA = None
@@ -185,6 +192,7 @@ class ParRep:
                         
                 if (gchk>=0) and (myid==0):
                     G,LS,T,enum = self.add_event(G,LS,T,enum, gamma, nls, time )
+                    print " - event, time: %f    events: %d." % (time, enum)
             
             
             if (myid==0):    
