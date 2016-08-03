@@ -72,7 +72,7 @@ class Output:
 
         for ii, id in enumerate( self.IDList):
 
-            if (self.SaveTraj):
+            if (self.SaveTraj) and (len(self.FList)>0):
                 path = self.OutputPath + "/f." +  str(id)
                 np.savetxt(path, self.FList[ii] , fmt="%.4e") 
                 path = self.OutputPath + "/a." +  str(id)
@@ -80,23 +80,23 @@ class Output:
                 path = self.OutputPath + "/m." +  str(id)
                 np.savetxt(path, self.MList[ii] , fmt="%.4e") 
 
-            if (self.SaveEnergy):
+            if (self.SaveEnergy) and (len(self.ENList)>0):
                 path = self.OutputPath + "/e." +  str(id)
                 np.savetxt(path, self.ENList[ii] , fmt="%.5e") 
 
-            if (self.SaveLineEnergy):
+            if (self.SaveLineEnergy) and (len(self.LEList)>0):
                 path = self.OutputPath + "/le." +  str(id)
                 np.savetxt(path, self.LEList[ii] , fmt="%.4e") 
 
-            if (self.SaveGamma):
+            if (self.SaveGamma) and (len(self.GList)>0):
                 path = self.OutputPath + "/g." +  str(id)
                 np.savetxt(path, self.GList[ii] , fmt="%d") 
 
-            if (self.SaveTime):
+            if (self.SaveTime) and (len(self.TList)>0):
                 path = self.OutputPath + "/t." +  str(id)
                 np.savetxt(path, self.TList[ii] , fmt="%.6e") 
 
-            if (self.SaveLoad):
+            if (self.SaveLoad) and (len(self.LSList)>0):
                 path = self.OutputPath + "/ls." +  str(id)
                 np.savetxt(path, self.LSList[ii] , fmt="%.4e") 
                 
@@ -108,24 +108,24 @@ class Output:
 
         self.IDList.append( id )
 
-        if (self.SaveTraj):
+        if (self.SaveTraj) and (np.size(F)>0):
             self.FList.append( np.copy( F[:,::self.ostep] ) )
             self.AList.append( np.copy( A[:,::self.ostep] ) )
             self.MList.append( np.copy( M[:,::self.ostep] ) )
 
-        if (self.SaveEnergy):
+        if (self.SaveEnergy) and (np.size(EN)>0):
             self.ENList.append( np.copy( EN[::self.ostep] ) ) 
 
-        if (self.SaveLineEnergy):
+        if (self.SaveLineEnergy) and (np.size(LE)>0):
             self.LEList.append( np.copy( LE[:,::self.ostep] ) ) 
 
-        if (self.SaveGamma):
+        if (self.SaveGamma) and (np.size(G)>0):
             self.GList.append( np.copy( G[:,::self.ostep] ) ) 
 
-        if (self.SaveTime):
+        if (self.SaveTime) and (np.size(T)>0):
             self.TList.append( np.copy( T[::self.ostep] ) ) 
 
-        if (self.SaveLoad):
+        if (self.SaveLoad) and (np.size(LS)>0):
             self.LSList.append( np.copy( LS[::self.ostep] ) ) 
             
               

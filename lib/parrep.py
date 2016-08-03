@@ -1,5 +1,6 @@
 import numpy as np
 import cmath   
+from mpi4py import MPI
 
 class ParRep:
     
@@ -130,9 +131,9 @@ class ParRep:
                 ####
                 
                 if (myid==0):
-                    FF = [F[:, np.arange(jj, self.walkers, self.comm.Get_size())  for jj in np.arange(self.comm.Get_size() )  ] 
-                    AA = [A[:, np.arange(jj, self.walkers, self.comm.Get_size())  for jj in np.arange(self.comm.Get_size() )  ] 
-                    MM = [M[:, np.arange(jj, self.walkers, self.comm.Get_size())  for jj in np.arange(self.comm.Get_size() )  ] 
+                    FF = [F[:, np.arange(jj, self.walkers, self.comm.Get_size())]  for jj in np.arange(self.comm.Get_size() )  ] 
+                    AA = [A[:, np.arange(jj, self.walkers, self.comm.Get_size())]  for jj in np.arange(self.comm.Get_size() )  ] 
+                    MM = [M[:, np.arange(jj, self.walkers, self.comm.Get_size())]  for jj in np.arange(self.comm.Get_size() )  ] 
                 else:
                     FF= None
                     AA = None
@@ -161,7 +162,7 @@ class ParRep:
                             event = myid
                             break
                     
-                    gchk = self.comm.Allreduce( event, op=MPI.MAX )
+                    gchk = self.comm.allreduce( event, op=MPI.MAX )
                     
                     if (gchk<0 ):
                         time += self.ig.dt * self.pstep * self.walkers
@@ -181,7 +182,7 @@ class ParRep:
                     G,LS,T,enum = self.add_event(G,LS,T,enum, gamma, nls, time )
             
             
-                
-            self.output.AddOutput( repnum , [], [], [],[],[], G, T, LS )
+            if (myid==0):    
+                self.output.AddOutput( repnum , [], [], [],[],[], G, T, LS )
             
             
