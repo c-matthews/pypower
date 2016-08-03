@@ -97,12 +97,12 @@ class ParRep:
                 # DEPHASE STAGE
                 ####
                 
+                F = np.tile(f, (self.walkers,1) ).T
+                A = np.tile(a, (self.walkers,1) ).T
+                M = np.tile(m, (self.walkers,1) ).T
+                
                 if (myid==0) and time<self.maxtime:
-                    jj = 0
-                    F = np.tile(f, (self.walkers,1) ).T
-                    A = np.tile(a, (self.walkers,1) ).T
-                    M = np.tile(m, (self.walkers,1) ).T
-                    
+                    jj = 0  
                     
                     for ii in np.arange( self.walkers ):
                         f = F[:,ii]
@@ -134,6 +134,8 @@ class ParRep:
                 MM = self.comm.scatter( M  , root = 0 )
                 time = self.comm.bcast( time , root=0 )
                 gamma = self.comm.bcast( gamma , root=0 )
+
+                print [myid , np.shape(FF) ]
 
                 ntasks = np.shape(FF)[1]
                     
