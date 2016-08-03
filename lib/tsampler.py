@@ -41,11 +41,13 @@ class TrajSampler:
             G = np.zeros( ( self.model.nline, self.steps ) )
             LS = np.ones( (  self.steps ) )
             
+            anodes = np.ones( self.model.nbus )>0
+            
             
             while ii < self.steps :
                  
                 
-                f,a,m,F,A,M,E,L,jj,g,nls = self.ig.adv( f, a , m , self.steps - ii , gamma )
+                f,a,m,F,A,M,E,L,jj,g,nls, anodes = self.ig.adv( f, a , m , self.steps - ii , gamma, anodes )
                 
                 FF[:,ii:] = np.copy(F)
                 AA[:,ii:] = np.copy(A)
@@ -57,7 +59,7 @@ class TrajSampler:
                 
                 
                 if nls>=0:
-                    LS[ii:] = nls
+                    LS[ii:] = nls 
                 
                 
                 gamma = g

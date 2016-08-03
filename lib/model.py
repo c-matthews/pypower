@@ -223,6 +223,6 @@ class Model:
         
         new_ls =  np.sum( self.Pload[ nactive ] ) / np.sum( self.Pload ) 
         
-        return gg, new_ls
+        return gg, new_ls, nactive
             
     

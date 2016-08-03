@@ -15,13 +15,14 @@ class Integrator:
         self.dt2 = self.dt * 0.5
         self.sqdt = np.sqrt(self.dt)
         
-    def adv(self, freq, angle, mag, N , gamma ):
+    def adv(self, freq, angle, mag, N , gamma, anodes ):
         
         ybus = self.model.assemble_ybus(gamma) 
         f = freq
         a = angle
         m = mag
         g = gamma
+        ann = anodes
         
         F = np.zeros( (len(f), N) )
         A = np.zeros( (len(a), N) )
@@ -31,11 +32,11 @@ class Integrator:
         LE = np.zeros( (self.model.nline, N) )
         
         ii = 0
-        nls = -1
+        nls = -1 
         
         while ii<N :
             
-            f,a,m = self.step(f,a,m, ybus)
+            f,a,m = self.step(f,a,m, ybus, ann)
             
             en,le = self.model.energy(f,a,m,ybus, g) 
             
@@ -54,23 +55,23 @@ class Integrator:
             if io: 
                 print "fail!"
                 print 1+np.arange(self.model.nline)[ol] 
-                g, nls = self.model.removeline(g , ol )
+                g, nls, ann = self.model.removeline(g , ol )
                 break
             
-        return f,a,m,F,A,M,EN,LE,ii,g, nls
+        return f,a,m,F,A,M,EN,LE,ii,g, nls, ann
             
             
-    def step(self, f, a, m, yb):
+    def step(self, f, a, m, yb, anodes):
         
-        f = f - self.dt2 * self.model.dH_dangle(a,m,yb )
+        f[anodes] = f[anodes] - self.dt2 * self.model.dH_dangle(a,m,yb )[anodes]
         
-        a = a + self.dt * self.model.dH_dfreq( f )
+        a[anodes] = a[anodes] + self.dt * self.model.dH_dfreq( f )[anodes]
         
-        f = f - self.dt2 * self.model.dH_dangle(a,m,yb )
+        f[anodes] = f[anodes] - self.dt2 * self.model.dH_dangle(a,m,yb )[anodes]
         
-        m = m - self.dt * self.model.eps * self.model.dH_dmag(a,m,yb) + self.sqdt * self.model.rand_mag()
+        m[anodes] = m[anodes] - self.dt * self.model.eps * self.model.dH_dmag(a,m,yb)[anodes] + self.sqdt * self.model.rand_mag()[anodes]
         
-        a = a - self.dt * self.model.eps * self.model.dH_dangle(a,m,yb) + self.sqdt * self.model.rand_angle()
+        a[anodes] = a[anodes] - self.dt * self.model.eps * self.model.dH_dangle(a,m,yb)[anodes] + self.sqdt * self.model.rand_angle()[anodes]
         
         return f,a,m
         

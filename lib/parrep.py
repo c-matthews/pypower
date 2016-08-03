@@ -42,7 +42,7 @@ class ParRep:
         
         return GG,LSLS,TT,enum 
     
-    def sync_state(self, f,a,m,gamma, time, ls):
+    def sync_state(self, f,a,m,gamma, time, ls, anodes):
         
         
         f = self.comm.bcast( f , root=0 )
@@ -51,8 +51,9 @@ class ParRep:
         gamma = self.comm.bcast( gamma , root=0 )
         time = self.comm.bcast( time , root=0 )
         ls = self.comm.bcast( ls , root=0 )
+        anodes = self.comm.bcast( anodes , root=0 )
         
-        return f,a,m,gamma,time,ls
+        return f,a,m,gamma,time,ls,anodes
         
         
         
@@ -76,6 +77,8 @@ class ParRep:
             time = 0.0
             ls = 1.0
             
+            anodes = np.ones( self.model.nbus )>0
+            
             if (myid==0):
                 print ""
                 print " -- Beginning run %d." % (repnum+1)
@@ -94,20 +97,21 @@ class ParRep:
                     while (jj < self.s_decor) and ( self.keepgoing( time , gamma, ls  ) ):
                         #f,a,m,F,A,M,E,L,jj,g,nls = self.ig.adv( f, a , m , self.s_decor , gamma )
                         #f,a,m,jj,gamma,nls = self.ig.adv( f, a , m , self.s_decor , gamma )[0,1,2,8,9,10]
-                        f,a,m,_,_,_,_,_,jj,g,nls = self.ig.adv( f, a , m , self.s_decor , gamma ) 
+                        f,a,m,_,_,_,_,_,jj,g,nls,anodes = self.ig.adv( f, a , m , self.s_decor , gamma,anodes ) 
                     
                         time += jj * self.ig.dt
                         gg = gamma
-                        gamma = g
-                        ls = nls
+                        gamma = g 
+                        
                         
                         if (self.diff_g(g,gg) ):
                             G,LS,T,enum = self.add_event(G,LS,T,enum, gamma, nls, time )
                             jj=0
+                            ls = nls
                             print " - event, time: %f   ls: %f     events: %d." % (time, ls , enum)
                             
                 
-                f,a,m,gamma,time,ls = self.sync_state( f,a,m,gamma,time, ls )
+                f,a,m,gamma,time,ls,anodes = self.sync_state( f,a,m,gamma,time, ls,anodes )
                 
                 if (self.keepgoing( time , gamma, ls  ) == False ):
                     break
@@ -131,7 +135,7 @@ class ParRep:
                     tt = 0
                     
                     while (tt==0):
-                        f,a,m,_,_,_,_,_,tt,g,_ = self.ig.adv( f, a , m , self.s_dephase , gamma ) 
+                        f,a,m,_,_,_,_,_,tt,g,_,_ = self.ig.adv( f, a , m , self.s_dephase , gamma,anodes ) 
                                 
                         if (self.diff_g(g,gamma)): 
                             ri =  self.model.Random.randint( ii+1 ) 
@@ -158,7 +162,7 @@ class ParRep:
                     
                     for ii in np.arange( ntasks ):
                         
-                        F[:,ii], A[:,ii] , M[:,ii],_,_,_,_,_,jj,g,nls = self.ig.adv( F[:,ii], A[:,ii] , M[:,ii] , self.pstep , gamma ) 
+                        F[:,ii], A[:,ii] , M[:,ii],_,_,_,_,_,jj,g,nls, ann = self.ig.adv( F[:,ii], A[:,ii] , M[:,ii] , self.pstep , gamma, anodes ) 
                     
                         if (self.diff_g(g,gamma)):
                             event = myid
@@ -175,6 +179,7 @@ class ParRep:
                         f = self.comm.bcast( F[:,ii] , root= gchk )
                         a = self.comm.bcast( A[:,ii] , root= gchk )
                         m = self.comm.bcast( M[:,ii] , root= gchk )
+                        anodes = self.comm.bcast( ann , root= gchk )
                         time += self.ig.dt * self.pstep * ( float(gchk)  / self.comm.Get_size() ) + jj * self.ig.dt
                         break
                     
@@ -215,62 +220,3 @@ class ParRep:
         return True
     
         
-        
-        
-        
-########
-## Fleming Viot process:
-########
-
-                #if (myid==0) and time<self.maxtime:
-                    #jj = 0  
-                    #F = np.tile(f, (self.walkers,1) ).T
-                    #A = np.tile(a, (self.walkers,1) ).T
-                    #M = np.tile(m, (self.walkers,1) ).T
-                    #print "DEPHASE step, time: %f    events: %d." % (time, enum)
-                    
-                    
-                    #for jj in np.arange( self.s_dephase): 
-                    
-                        #for ii in np.arange( self.walkers ):
-                            #f = F[:,ii]
-                            #a = A[:,ii]
-                            #m = M[:,ii] 
-                            #tt = 0
-                            
-                            #while (tt==0):
-                                #f,a,m,_,_,_,_,_,tt,g,_ = self.ig.adv( f, a , m , 1 , gamma ) 
-                                
-                                #if (self.diff_g(g,gamma)): 
-                                    #ri =  self.model.Random.randint( ii+1 ) 
-                                    #f = F[:,ri]
-                                    #a = A[:,ri]
-                                    #m = M[:,ri]
-                                    #tt = 0
-                                    
-                            #F[:,ii] = f
-                            #A[:,ii] = a
-                            #M[:,ii] = m
-                            
-                            
-                
-                #if (myid==0):
-                    #FF = [F[:, np.arange(jj, self.walkers, self.comm.Get_size())]  for jj in np.arange(self.comm.Get_size() )  ] 
-                    #AA = [A[:, np.arange(jj, self.walkers, self.comm.Get_size())]  for jj in np.arange(self.comm.Get_size() )  ] 
-                    #MM = [M[:, np.arange(jj, self.walkers, self.comm.Get_size())]  for jj in np.arange(self.comm.Get_size() )  ] 
-                    #print "PARALLEL step, time: %f    events: %d." % (time, enum)
-                #else:
-                    #FF= None
-                    #AA = None
-                    #MM = None
-                    
-                #F = self.comm.scatter( FF  , root = 0 )
-                #A = self.comm.scatter( AA  , root = 0 )
-                #M = self.comm.scatter( MM  , root = 0 )
-                #time = self.comm.bcast( time , root=0 )
-                #gamma = self.comm.bcast( gamma , root=0 )
-
-                #print [myid , np.shape(F) ]
-
-                #ntasks = np.shape(F)[1]
-                
