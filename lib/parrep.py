@@ -86,10 +86,12 @@ class ParRep:
                         f,a,m,_,_,_,_,_,jj,g,nls = self.ig.adv( f, a , m , self.s_decor , gamma ) 
                     
                         time += jj * self.ig.dt
+                        gg = gamma
                         gamma = g
                         
-                        if (jj<self.s_decor):
+                        if (self.diff_g(g,gg) ):
                             G,LS,T,enum = self.add_event(G,LS,T,enum, gamma, nls, time )
+                            jj=0
                             
                         if (time>= self.maxtime):
                             break
@@ -105,25 +107,28 @@ class ParRep:
                     A = np.tile(a, (self.walkers,1) ).T
                     M = np.tile(m, (self.walkers,1) ).T
                     
-                    for ii in np.arange( self.walkers ):
-                        f = F[:,ii]
-                        a = A[:,ii]
-                        m = M[:,ii]
-                        
-                        jj = 0
-                        
-                        while (jj < self.s_dephase): 
-                            f,a,m,_,_,_,_,_,jj,_,_ = self.ig.adv( f, a , m , self.s_dephase , gamma ) 
-                        
-                            if (jj<self.s_dephase): 
-                                ri =  self.model.Random.randint( ii+1 ) 
-                                f = F[:,ri]
-                                a = A[:,ri]
-                                m = M[:,ri]
+                    
+                    for jj in np.arange( self.s_dephase): 
+                    
+                        for ii in np.arange( self.walkers ):
+                            f = F[:,ii]
+                            a = A[:,ii]
+                            m = M[:,ii] 
+                            tt = 0
+                            
+                            while (tt==0):
+                                f,a,m,_,_,_,_,_,tt,g,_ = self.ig.adv( f, a , m , 1 , gamma ) 
                                 
-                        F[:,ii] = f
-                        A[:,ii] = a
-                        M[:,ii] = m
+                                if (self.diff_g(g,gamma)): 
+                                    ri =  self.model.Random.randint( ii+1 ) 
+                                    f = F[:,ri]
+                                    a = A[:,ri]
+                                    m = M[:,ri]
+                                    tt = 0
+                                    
+                            F[:,ii] = f
+                            A[:,ii] = a
+                            M[:,ii] = m
                         
                 
                 ####
@@ -158,7 +163,7 @@ class ParRep:
                         
                         F[:,ii], A[:,ii] , M[:,ii],_,_,_,_,_,jj,g,nls = self.ig.adv( F[:,ii], A[:,ii] , M[:,ii] , self.pstep , gamma ) 
                     
-                        if (jj<self.pstep):
+                        if (self.diff_g(g,gamma)):
                             event = myid
                             break
                     
@@ -183,6 +188,18 @@ class ParRep:
             
             
             if (myid==0):    
+                T=T[:enum]
+                LS=LS[:enum]
+                G=G[:,:enum]
                 self.output.AddOutput( repnum , [], [], [],[],[], G, T, LS )
             
-            
+    def diff_g( self, x , y ):
+        
+        k = np.array(x)-np.array(y)
+        k = np.sum( k*k )
+        
+        if (k>0):
+            return True
+        else:
+            return False
+        
