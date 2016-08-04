@@ -24,9 +24,9 @@ class TrajSampler:
     def addevent(self, EV_, enum_,t,ls,g):
         
         EV = EV_
-        EV[0,enum] = t
-        EV[1,enum] = ls
-        EV[1:,enum] = g
+        EV[0,enum_] = t
+        EV[1,enum_] = ls
+        EV[2:,enum_] = g
         
         return EV, enum_ + 1
     
@@ -45,14 +45,24 @@ class TrajSampler:
             a = self.model.getic_angle()
             m = self.model.getic_mag()
             
-            FF = np.zeros( ( len(f), self.steps ) )
-            AA = np.zeros( ( len(f), self.steps ) )
-            MM = np.zeros( ( len(f), self.steps ) )
-            EV = np.zeros( (  len(gamma)+2 , self.model.nline ) )
-            EN = np.zeros( (  self.steps ) )
-            LE = np.zeros( ( self.model.nline, self.steps ) )
-            G = np.tile(gamma, (self.steps,1) ).T
-            LS = np.ones( (  self.steps ) )
+            FF = np.array([])
+            AA = np.array([]) 
+            MM = np.array([]) 
+            EV = np.array([]) 
+            EN = np.array([]) 
+            LE = np.array([]) 
+            G = np.array([]) 
+            LS = np.array([]) 
+            T = np.array([])
+            
+            if (self.output.SaveTraj):    FF = np.zeros( ( len(f), self.steps ) )
+            if (self.output.SaveTraj):    AA = np.zeros( ( len(f), self.steps ) )
+            if (self.output.SaveTraj):    MM = np.zeros( ( len(f), self.steps ) )
+            if (self.output.SaveEvents):    EV = np.zeros( (  len(gamma)+2 , self.model.nline ) )
+            if (self.output.SaveEnergy):    EN = np.zeros( (  self.steps ) )
+            if (self.output.SaveLineEnergy):    LE = np.zeros( ( self.model.nline, self.steps ) )
+            if (self.output.SaveGamma):    G = np.tile(gamma, (self.steps,1) ).T
+            if (self.output.SaveLoad):    LS = np.ones( (  self.steps ) )
             
             anodes = np.ones( self.model.nbus )>0
             
@@ -68,30 +78,30 @@ class TrajSampler:
                 
                 f,a,m,F,A,M,E,L,jj,g,nls, anodes = self.ig.adv( f, a , m , self.steps - ii , gamma, anodes )
                 
-                FF[:,ii:] = np.copy(F)
-                AA[:,ii:] = np.copy(A)
-                MM[:,ii:] = np.copy(M)
-                EN[ii:] = np.copy(E)
-                LE[:,ii:] = np.copy(L)
+                if (self.output.SaveTraj):    FF[:,ii:] = np.copy(F)
+                if (self.output.SaveTraj):    AA[:,ii:] = np.copy(A)
+                if (self.output.SaveTraj):    MM[:,ii:] = np.copy(M)
+                if (self.output.SaveEnergy):    EN[ii:] = np.copy(E)
+                if (self.output.SaveLineEnergy):    LE[:,ii:] = np.copy(L)
                 ii += jj
                 time += jj * self.ig.dt
                 
                 if nls>=0:
-                    LS[ii:] = nls 
+                    if (self.output.SaveLoad):    LS[ii:] = nls 
                     ls = nls
                     EV,enum = self.addevent(EV,enum,time,ls,g)
                 
                 gamma = g
-                G[:,ii:] = np.tile(gamma, (self.steps-ii,1) ).T
+                if (self.output.SaveGamma):    G[:,ii:] = np.tile(gamma, (self.steps-ii,1) ).T
                 
-            T = np.arange(1, ii+1) * self.ig.dt
-            FF = FF[:,:ii]
-            AA = AA[:,:ii]
-            MM = MM[:,:ii]
-            EN = EN[:ii]
-            LE = LE[:,:ii]
-            G = G[:,:ii]
-            EV=EV[:,:enum]
+            if (self.output.SaveTime):    T = np.arange(1, ii+1) * self.ig.dt
+            if (self.output.SaveTraj):    FF = FF[:,:ii]
+            if (self.output.SaveTraj):    AA = AA[:,:ii]
+            if (self.output.SaveTraj):    MM = MM[:,:ii]
+            if (self.output.SaveEnergy):    EN = EN[:ii]
+            if (self.output.SaveLineEnergy):    LE = LE[:,:ii]
+            if (self.output.SaveGamma):    G = G[:,:ii]
+            if (self.output.SaveEvents):    EV=EV[:,:enum]
             
             self.output.AddOutput( task, FF, AA, MM,EN,LE, G, T, LS,EV )
             

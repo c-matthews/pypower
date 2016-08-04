@@ -35,14 +35,15 @@ class ParRep:
         TT = T
         
         EV = EV_
-        EV[0,enum] = t
-        EV[1,enum] = nls
-        EV[1:,enum] = g
+        if (self.output.SaveEvents):    
+            EV[0,enum] = time
+            EV[1,enum] = nls
+            EV[2:,enum] = g
         
         
-        TT[enum] = time
-        GG[:,enum] = g
-        LSLS[enum] = nls
+        if (self.output.SaveTime):    TT[enum] = time
+        if (self.output.SaveGamma):    GG[:,enum] = g
+        if (self.output.SaveLoad):    LSLS[enum] = nls
         
         enum = enum + 1
          
@@ -76,10 +77,21 @@ class ParRep:
             a = self.model.getic_angle()
             m = self.model.getic_mag()
             
-            G = np.ones( (self.model.nline , self.maxevents) )
-            LS = np.ones( self.maxevents )
-            T = np.zeros( self.maxevents )
-            EV = np.zeros( (  len(gamma)+2 , self.model.nline ) )
+            
+            FF = np.array([])
+            AA = np.array([]) 
+            MM = np.array([]) 
+            EV = np.array([]) 
+            EN = np.array([]) 
+            LE = np.array([]) 
+            G = np.array([]) 
+            LS = np.array([]) 
+            T = np.array([])
+            
+            if (self.output.SaveGamma):    G = np.ones( (self.model.nline , self.maxevents) )
+            if (self.output.SaveLoad):    LS = np.ones( self.maxevents )
+            if (self.output.SaveTime):    T = np.zeros( self.maxevents )
+            if (self.output.SaveEvents):    EV = np.zeros( (  len(gamma)+2 , self.model.nline ) )
             enum = 0
             
             time = 0.0
@@ -91,7 +103,7 @@ class ParRep:
                 print ""
                 print " -- Beginning run %d." % (repnum+1)
                 print ""
-                G,LS,T,enum,EV = self.add_event(G,LS,T,enum, gamma, nls, time,EV )
+                G,LS,T,enum,EV = self.add_event(G,LS,T,enum, gamma, ls, time,EV )
                 
             
             while (  self.ig.keepgoing( time , gamma, ls  )  ):
@@ -207,7 +219,7 @@ class ParRep:
                 LS=LS[:enum]
                 G=G[:,:enum]
                 EV=EV[:,:enum]
-                self.output.AddOutput( repnum , [], [], [],[],[], G, T, LS,EV )
+                self.output.AddOutput( task, FF, AA, MM,EN,LE, G, T, LS,EV )
             
     def diff_g( self, x , y ):
         

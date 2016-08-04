@@ -104,7 +104,7 @@ class Output:
 
             if (self.SaveEvents) and (len(self.EVList)>0):
                 path = self.OutputPath + "/ev." +  str(id)
-                np.savetxt(path, self.LSList[ii] , fmt="%.5e") 
+                np.savetxt(path, self.EVList[ii] , fmt="%.5e") 
                 
                 
             

@@ -28,12 +28,19 @@ class Integrator:
         g = gamma
         ann = anodes
         
-        F = np.zeros( (len(f), N) )
-        A = np.zeros( (len(a), N) )
-        M = np.zeros( (len(m), N) )
+            
+        F = np.array([])
+        A = np.array([]) 
+        M = np.array([]) 
+        EN = np.array([]) 
+        LE = np.array([]) 
+            
+        if (self.model.SaveTraj):    F = np.zeros( (len(f), N) )
+        if (self.model.SaveTraj):    A = np.zeros( (len(a), N) )
+        if (self.model.SaveTraj):    M = np.zeros( (len(m), N) )
         
-        EN = np.zeros( N )
-        LE = np.zeros( (self.model.nline, N) )
+        if (self.model.SaveEnergy):    EN = np.zeros( N )
+        if (self.model.SaveLineEnergy):    LE = np.zeros( (self.model.nline, N) )
         
         ii = 0
         nls = -1 
@@ -48,11 +55,11 @@ class Integrator:
             
                 
             
-            F[:,ii] = f
-            A[:,ii] = a
-            M[:,ii] = m
-            EN[ii] = en
-            LE[:,ii] = le
+            if (self.model.SaveTraj):    F[:,ii] = f
+            if (self.model.SaveTraj):    A[:,ii] = a
+            if (self.model.SaveTraj):    M[:,ii] = m
+            if (self.model.SaveEnergy):    EN[ii] = en
+            if (self.model.SaveLineEnergy):    LE[:,ii] = le
             
             ii+=1
             
