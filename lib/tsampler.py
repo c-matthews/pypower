@@ -40,7 +40,7 @@ class TrajSampler:
             MM = np.zeros( ( len(f), self.steps ) )
             EN = np.zeros( (  self.steps ) )
             LE = np.zeros( ( self.model.nline, self.steps ) )
-            G = np.zeros( ( self.model.nline, self.steps ) )
+            G = np.tile(gamma, (self.steps,1) ).T
             LS = np.ones( (  self.steps ) )
             
             anodes = np.ones( self.model.nbus )>0
@@ -59,23 +59,21 @@ class TrajSampler:
                 MM[:,ii:] = np.copy(M)
                 EN[ii:] = np.copy(E)
                 LE[:,ii:] = np.copy(L)
-                G[:,ii:] = np.tile(gamma, (self.steps-ii,1) ).T
                 ii += jj
                 time += jj * self.ig.dt
-                
                 
                 if nls>=0:
                     LS[ii:] = nls 
                     ls = nls
                 
-                
                 gamma = g
+                G[:,ii:] = np.tile(gamma, (self.steps-ii,1) ).T
                 
             T = np.arange(1, ii+1) * self.ig.dt
             FF = FF[:,:ii]
             AA = AA[:,:ii]
             MM = MM[:,:ii]
-            EN = EN[:,:ii]
+            EN = EN[:ii]
             LE = LE[:,:ii]
             G = G[:,:ii]
             
