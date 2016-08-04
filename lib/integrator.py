@@ -3,10 +3,11 @@ import cmath
 
 class Integrator:
     
-    def __init__( self,ini, comm, model ):
+    def __init__( self,ini, comm, model, output ):
         
         self.comm = comm
         self.model = model
+        self.output = output
           
         self.dt = ini.getfloat("integrator","timestep") 
           
@@ -35,12 +36,12 @@ class Integrator:
         EN = np.array([]) 
         LE = np.array([]) 
             
-        if (self.model.SaveTraj):    F = np.zeros( (len(f), N) )
-        if (self.model.SaveTraj):    A = np.zeros( (len(a), N) )
-        if (self.model.SaveTraj):    M = np.zeros( (len(m), N) )
+        if (self.output.SaveTraj):    F = np.zeros( (len(f), N) )
+        if (self.output.SaveTraj):    A = np.zeros( (len(a), N) )
+        if (self.output.SaveTraj):    M = np.zeros( (len(m), N) )
         
-        if (self.model.SaveEnergy):    EN = np.zeros( N )
-        if (self.model.SaveLineEnergy):    LE = np.zeros( (self.model.nline, N) )
+        if (self.output.SaveEnergy):    EN = np.zeros( N )
+        if (self.output.SaveLineEnergy):    LE = np.zeros( (self.model.nline, N) )
         
         ii = 0
         nls = -1 
@@ -55,11 +56,11 @@ class Integrator:
             
                 
             
-            if (self.model.SaveTraj):    F[:,ii] = f
-            if (self.model.SaveTraj):    A[:,ii] = a
-            if (self.model.SaveTraj):    M[:,ii] = m
-            if (self.model.SaveEnergy):    EN[ii] = en
-            if (self.model.SaveLineEnergy):    LE[:,ii] = le
+            if (self.output.SaveTraj):    F[:,ii] = f
+            if (self.output.SaveTraj):    A[:,ii] = a
+            if (self.output.SaveTraj):    M[:,ii] = m
+            if (self.output.SaveEnergy):    EN[ii] = en
+            if (self.output.SaveLineEnergy):    LE[:,ii] = le
             
             ii+=1
             
