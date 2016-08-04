@@ -19,6 +19,7 @@ class Output:
         self.SaveGamma = ini.getboolean("output","savegamma",True) 
         self.SaveTime = ini.getboolean("output","savetime",True) 
         self.SaveLoad = ini.getboolean("output","saveload",True) 
+        self.SaveEvents = ini.getboolean("output","saveevents",True) 
 
         self.PrintFreq = ini.getint("output","printfreq",0)
         self.PrintTime = ini.getint("output","printtime",0)
@@ -58,6 +59,7 @@ class Output:
         self.GList = list()
         self.TList = list()
         self.LSList = list()
+        self.EVList = list()
         
         self.lastprinttime = 0
         self.lastprintsteps = 0
@@ -99,12 +101,16 @@ class Output:
             if (self.SaveLoad) and (len(self.LSList)>0):
                 path = self.OutputPath + "/ls." +  str(id)
                 np.savetxt(path, self.LSList[ii] , fmt="%.4e") 
+
+            if (self.SaveEvents) and (len(self.EVList)>0):
+                path = self.OutputPath + "/ev." +  str(id)
+                np.savetxt(path, self.LSList[ii] , fmt="%.5e") 
                 
                 
             
         
 
-    def AddOutput(self, id , F, A , M, EN, LE, G, T, LS ):
+    def AddOutput(self, id , F, A , M, EN, LE, G, T, LS,EV ):
 
         self.IDList.append( id )
 
@@ -127,6 +133,9 @@ class Output:
 
         if (self.SaveLoad) and (np.size(LS)>0):
             self.LSList.append( np.copy( LS[::self.ostep] ) ) 
+
+        if (self.SaveEvents) and (np.size(EV)>0):
+            self.EVList.append( np.copy( EV[::self.ostep] ) ) 
             
               
         

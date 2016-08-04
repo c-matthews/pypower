@@ -28,19 +28,26 @@ class ParRep:
         self.s_decor = 1 + int(self.t_decor / self.ig.dt)
         self.s_dephase = 1 + int(self.t_dephase / self.ig.dt)
         
-    def add_event(self,G,LS,T,enum,g,nls, time):
+    def add_event(self,G,LS,T,enum,g,nls, time,EV_):
         
         GG = G
         LSLS = LS
         TT = T
         
-        enum = enum + 1
+        EV = EV_
+        EV[0,enum] = t
+        EV[1,enum] = nls
+        EV[1:,enum] = g
+        
         
         TT[enum] = time
         GG[:,enum] = g
         LSLS[enum] = nls
         
-        return GG,LSLS,TT,enum 
+        enum = enum + 1
+         
+        
+        return GG,LSLS,TT,enum,EV 
     
     def sync_state(self, f,a,m,gamma, time, ls, anodes):
         
@@ -72,6 +79,7 @@ class ParRep:
             G = np.ones( (self.model.nline , self.maxevents) )
             LS = np.ones( self.maxevents )
             T = np.zeros( self.maxevents )
+            EV = np.zeros( (  len(gamma)+2 , self.model.nline ) )
             enum = 0
             
             time = 0.0
@@ -83,6 +91,8 @@ class ParRep:
                 print ""
                 print " -- Beginning run %d." % (repnum+1)
                 print ""
+                G,LS,T,enum,EV = self.add_event(G,LS,T,enum, gamma, nls, time,EV )
+                
             
             while (  self.ig.keepgoing( time , gamma, ls  )  ):
                 
@@ -105,7 +115,7 @@ class ParRep:
                         
                         
                         if (self.diff_g(g,gg) ):
-                            G,LS,T,enum = self.add_event(G,LS,T,enum, gamma, nls, time )
+                            G,LS,T,enum,EV = self.add_event(G,LS,T,enum, gamma, nls, time,EV )
                             jj=0
                             ls = nls
                             print " - event, time: %f   ls: %f     events: %d." % (time, ls , enum)
@@ -152,6 +162,8 @@ class ParRep:
                 ####
                 # PARALLEL STAGE
                 ####
+                
+                self.comm.Barrier()
                 if (myid==0): 
                     print "PARALLEL step, time: %f  ls:%f    events: %d." % (time, ls, enum)
                     
@@ -186,7 +198,7 @@ class ParRep:
                 
                         
                 if (gchk>=0) and (myid==0):
-                    G,LS,T,enum = self.add_event(G,LS,T,enum, gamma, ls, time )
+                    G,LS,T,enum,EV = self.add_event(G,LS,T,enum, gamma, ls, time,EV )
                     print " - event, time: %f   ls: %f     events: %d." % (time, ls , enum)
             
             
@@ -194,7 +206,8 @@ class ParRep:
                 T=T[:enum]
                 LS=LS[:enum]
                 G=G[:,:enum]
-                self.output.AddOutput( repnum , [], [], [],[],[], G, T, LS )
+                EV=EV[:,:enum]
+                self.output.AddOutput( repnum , [], [], [],[],[], G, T, LS,EV )
             
     def diff_g( self, x , y ):
         

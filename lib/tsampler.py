@@ -20,6 +20,16 @@ class TrajSampler:
     def config(self):
         
         self.steps = 1 + int( self.stoptime / self.ig.dt )
+        
+    def addevent(self, EV_, enum_,t,ls,g):
+        
+        EV = EV_
+        EV[0,enum] = t
+        EV[1,enum] = ls
+        EV[1:,enum] = g
+        
+        return EV, enum_ + 1
+    
             
     def run(self):
         
@@ -38,6 +48,7 @@ class TrajSampler:
             FF = np.zeros( ( len(f), self.steps ) )
             AA = np.zeros( ( len(f), self.steps ) )
             MM = np.zeros( ( len(f), self.steps ) )
+            EV = np.zeros( (  len(gamma)+2 , self.model.nline ) )
             EN = np.zeros( (  self.steps ) )
             LE = np.zeros( ( self.model.nline, self.steps ) )
             G = np.tile(gamma, (self.steps,1) ).T
@@ -47,6 +58,9 @@ class TrajSampler:
             
             time = 0 
             ls = 1.0
+            enum = 0
+            EV,enum = self.addevent(EV,enum,time,ls,gamma)
+            
             
             
             while self.ig.keepgoing( time , gamma, ls  ) :
@@ -65,6 +79,7 @@ class TrajSampler:
                 if nls>=0:
                     LS[ii:] = nls 
                     ls = nls
+                    EV,enum = self.addevent(EV,enum,time,ls,g)
                 
                 gamma = g
                 G[:,ii:] = np.tile(gamma, (self.steps-ii,1) ).T
@@ -76,6 +91,7 @@ class TrajSampler:
             EN = EN[:ii]
             LE = LE[:,:ii]
             G = G[:,:ii]
+            EV=EV[:,:enum]
             
-            self.output.AddOutput( task, FF, AA, MM,EN,LE, G, T, LS )
+            self.output.AddOutput( task, FF, AA, MM,EN,LE, G, T, LS,EV )
             
