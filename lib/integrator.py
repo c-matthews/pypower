@@ -9,6 +9,10 @@ class Integrator:
         self.model = model
           
         self.dt = ini.getfloat("integrator","timestep") 
+          
+        self.stoptime = ini.getfloat("integrator","stop_time", 10000.0)  
+        self.stoplines = ini.getint("integrator","stop_lines", self.model.nline)  
+        self.stopload = ini.getfloat("integrator","stop_load", 0.0)  
         
     def config(self): 
           
@@ -74,5 +78,18 @@ class Integrator:
         a[anodes] = a[anodes] - self.dt * self.model.eps * self.model.dH_dangle(a,m,yb)[anodes] + self.sqdt * self.model.rand_angle()[anodes]
         
         return f,a,m
+        
+    def keepgoing(self, time, g , ls ):
+        
+        if ( time >= self.stoptime ):
+            return False
+        
+        if ( self.model.nline - np.sum( np.array(g) ) >= self.stoplines ):
+            return False
+        
+        if (ls <= self.stopload ):
+            return False
+        
+        return True
         
         

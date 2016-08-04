@@ -11,13 +11,15 @@ class TrajSampler:
         self.ig = integrator
         self.output = output
           
-        self.steps = ini.getint("trajsampler","steps")  
+        self.stoptime = self.ig.stoptime
+        self.stoplines = self.ig.stoplines
+        self.stopload = self.ig.stopload
         self.walkers = ini.getint("trajsampler","walkers",1) 
         
         
     def config(self):
         
-        pass
+        self.steps = 1 + int( self.stoptime / self.ig.dt )
             
     def run(self):
         
@@ -43,8 +45,11 @@ class TrajSampler:
             
             anodes = np.ones( self.model.nbus )>0
             
+            time = 0 
+            ls = 1.0
             
-            while ii < self.steps :
+            
+            while self.ig.keepgoing( time , gamma, ls  ) :
                  
                 
                 f,a,m,F,A,M,E,L,jj,g,nls, anodes = self.ig.adv( f, a , m , self.steps - ii , gamma, anodes )
@@ -56,15 +61,23 @@ class TrajSampler:
                 LE[:,ii:] = np.copy(L)
                 G[:,ii:] = np.tile(gamma, (self.steps-ii,1) ).T
                 ii += jj
+                time += jj * self.ig.dt
                 
                 
                 if nls>=0:
                     LS[ii:] = nls 
+                    ls = nls
                 
                 
                 gamma = g
                 
-            T = np.arange(1, self.steps+1) * self.ig.dt
+            T = np.arange(1, ii+1) * self.ig.dt
+            FF = FF[:,:ii]
+            AA = AA[:,:ii]
+            MM = MM[:,:ii]
+            EN = EN[:,:ii]
+            LE = LE[:,:ii]
+            G = G[:,:ii]
             
             self.output.AddOutput( task, FF, AA, MM,EN,LE, G, T, LS )
             

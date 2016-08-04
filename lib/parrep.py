@@ -12,9 +12,9 @@ class ParRep:
         self.ig = integrator
         self.output = output
           
-        self.stoptime = ini.getfloat("parrep","stop_time", 10000.0)  
-        self.stoplines = ini.getint("parrep","stop_lines", self.model.nline)  
-        self.stopload = ini.getfloat("parrep","stop_load", 0.0)  
+        self.stoptime = self.ig.stoptime
+        self.stoplines = self.ig.stoplines
+        self.stopload = self.ig.stopload
         self.walkers = ini.getint("parrep","walkers",1) 
         self.t_decor = ini.getfloat("parrep","t_decor")  
         self.t_dephase = ini.getfloat("parrep","t_dephase")  
@@ -84,7 +84,7 @@ class ParRep:
                 print " -- Beginning run %d." % (repnum+1)
                 print ""
             
-            while (  self.keepgoing( time , gamma, ls  )  ):
+            while (  self.ig.keepgoing( time , gamma, ls  )  ):
                 
                 ####
                 # DECOR STAGE
@@ -94,7 +94,7 @@ class ParRep:
                     jj = 0
                     print "DECOR step, time: %f  ls:%f    events: %d." % (time, ls, enum)
                     
-                    while (jj < self.s_decor) and ( self.keepgoing( time , gamma, ls  ) ):
+                    while (jj < self.s_decor) and ( self.ig.keepgoing( time , gamma, ls  ) ):
                         #f,a,m,F,A,M,E,L,jj,g,nls = self.ig.adv( f, a , m , self.s_decor , gamma )
                         #f,a,m,jj,gamma,nls = self.ig.adv( f, a , m , self.s_decor , gamma )[0,1,2,8,9,10]
                         f,a,m,_,_,_,_,_,jj,g,nls,anodes = self.ig.adv( f, a , m , self.s_decor , gamma,anodes ) 
@@ -113,7 +113,7 @@ class ParRep:
                 
                 f,a,m,gamma,time,ls,anodes = self.sync_state( f,a,m,gamma,time, ls,anodes )
                 
-                if (self.keepgoing( time , gamma, ls  ) == False ):
+                if (self.ig.keepgoing( time , gamma, ls  ) == False ):
                     break
                 
                 ####
@@ -158,7 +158,7 @@ class ParRep:
                 event = -1
                 gchk  = -1
 
-                while (self.keepgoing( time , gamma, ls  ) ):
+                while (self.ig.keepgoing( time , gamma, ls  ) ):
                     
                     for ii in np.arange( ntasks ):
                         
@@ -186,7 +186,7 @@ class ParRep:
                 
                         
                 if (gchk>=0) and (myid==0):
-                    G,LS,T,enum = self.add_event(G,LS,T,enum, gamma, nls, time )
+                    G,LS,T,enum = self.add_event(G,LS,T,enum, gamma, ls, time )
                     print " - event, time: %f   ls: %f     events: %d." % (time, ls , enum)
             
             
@@ -205,18 +205,5 @@ class ParRep:
             return True
         else:
             return False
-        
-    def keepgoing(self, time, g , ls ):
-        
-        if ( time >= self.stoptime ):
-            return False
-        
-        if ( self.model.nline - np.sum( np.array(g) ) >= self.stoplines ):
-            return False
-        
-        if (ls <= self.stopload ):
-            return False
-        
-        return True
     
         
