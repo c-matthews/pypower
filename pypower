@@ -37,9 +37,7 @@ def main( inistr ):
     if comm.rank==0:
         t = time.time()
     
-    mySampler.run()
-    
-    myOutput.save()
+    mySampler.run() 
      
     comm.Barrier()
     
@@ -47,6 +45,9 @@ def main( inistr ):
         t = time.time() - t
         myOutput.savetime( t ) 
         print "Total time : %f s."%t
+     
+    myOutput.save()
+     
     
     print "Done!"
 

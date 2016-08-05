@@ -65,8 +65,8 @@ class Integrator:
             ii+=1
             
             if io: 
-                print "fail!"
-                print 1+np.arange(self.model.nline)[ol] 
+                #print "fail!"
+                #print 1+np.arange(self.model.nline)[ol] 
                 g, nls, ann = self.model.removeline(g , ol )
                 break
             

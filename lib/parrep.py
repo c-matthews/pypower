@@ -150,25 +150,24 @@ class ParRep:
                 if (myid==0):
                     print "DEPHASE step, time: %f  ls:%f    events: %d." % (time, ls, enum)
                     
-                for ii in np.arange( ntasks ) :
-                    f = F[:,ii]
-                    a = A[:,ii]
-                    m = M[:,ii] 
-                    tt = 0
+                for tt in np.arange( self.s_dephase ):
                     
-                    while (tt==0):
-                        f,a,m,_,_,_,_,_,tt,g,_,_ = self.ig.adv( f, a , m , self.s_dephase , gamma,anodes ) 
-                                
+                    for ii in np.arange( ntasks ) :
+                        f = F[:,ii]
+                        a = A[:,ii]
+                        m = M[:,ii]  
+                        
+                        f,a,m,_,_,_,_,_,_,g,_,_ = self.ig.adv( f, a , m , 1 , gamma,anodes ) 
+                                    
                         if (self.diff_g(g,gamma)): 
                             ri =  self.model.Random.randint( ii+1 ) 
                             f = F[:,ri]
                             a = A[:,ri]
-                            m = M[:,ri]
-                            tt = 0
-                                    
-                    F[:,ii] = f
-                    A[:,ii] = a
-                    M[:,ii] = m
+                            m = M[:,ri] 
+                                        
+                        F[:,ii] = f
+                        A[:,ii] = a
+                        M[:,ii] = m
                      
                 
                 ####
