@@ -66,7 +66,10 @@ class Output:
          
                     
         
+    def savetime(self, t ):
         
+        path = self.OutputPath + "/time.txt"
+        np.savetxt(path, np.array(t) )
     
     def save(self):
 

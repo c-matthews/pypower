@@ -24,9 +24,10 @@ class TrajSampler:
     def addevent(self, EV_, enum_,t,ls,g):
         
         EV = EV_
-        EV[0,enum_] = t
-        EV[1,enum_] = ls
-        EV[2:,enum_] = g
+        if (self.output.SaveEvents):    
+            EV[0,enum_] = t
+            EV[1,enum_] = ls
+            EV[2:,enum_] = g
         
         return EV, enum_ + 1
     

@@ -215,11 +215,11 @@ class ParRep:
             
             
             if (myid==0):    
-                T=T[:enum]
-                LS=LS[:enum]
-                G=G[:,:enum]
-                EV=EV[:,:enum]
-                self.output.AddOutput( task, FF, AA, MM,EN,LE, G, T, LS,EV )
+                if (self.output.SaveTime):    T=T[:enum]
+                if (self.output.SaveLoad):    LS=LS[:enum]
+                if (self.output.SaveGamma):    G=G[:,:enum]
+                if (self.output.SaveEvents):    EV=EV[:,:enum]
+                self.output.AddOutput( repnum, FF, AA, MM,EN,LE, G, T, LS,EV )
             
     def diff_g( self, x , y ):
         
