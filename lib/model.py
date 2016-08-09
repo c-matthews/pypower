@@ -1,7 +1,7 @@
 import numpy as np
 import cmath
 from numpy import random
-
+import time
 
 class Model:
     
@@ -26,7 +26,10 @@ class Model:
         self.loadlist = np.loadtxt( self.mydir + "/loadlist.txt" , dtype="int")
         self.slacklist = np.loadtxt( self.mydir + "/slacklist.txt" , dtype="int")
         
-        
+        if self.seed==0:
+            self.seed = int( time.time() ) % 100000
+            self.seed  = self.comm.bcast( self.seed  , root=0 )
+            
         self.seed = self.seed + self.comm.Get_rank()
         self.Random = random.RandomState( self.seed )
         

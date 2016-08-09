@@ -203,7 +203,7 @@ class ParRep:
                         a = self.comm.bcast( A[:,ii] , root= gchk )
                         m = self.comm.bcast( M[:,ii] , root= gchk )
                         anodes = self.comm.bcast( ann , root= gchk )
-                        time += self.ig.dt * self.pstep * ( float(gchk)  / self.comm.Get_size() ) + jj * self.ig.dt
+                        time += self.ig.dt * self.pstep * ( float(gchk)  / self.walkers ) + jj * self.ig.dt
                         break
                     
                 
