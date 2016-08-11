@@ -95,7 +95,7 @@ class ParRep:
             enum = 0
             
             time = 0.0
-            ls = 1.0
+            _,ls,_ = self.model.removeline( gamma , 0 )
             
             anodes = np.ones( self.model.nbus )>0
             

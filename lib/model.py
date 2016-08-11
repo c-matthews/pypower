@@ -16,6 +16,7 @@ class Model:
         self.eps = ini.getfloat("model","epsilon",0.05)
         self.seed = ini.getint("model","seed",0)
         self.use_ic = ini.getboolean("model","ic",False)
+        self.takedown = ini.getint("model","takedown",0) -1
         
     def config(self): 
          
@@ -45,7 +46,7 @@ class Model:
             self.ic_f = np.zeros( self.nbus )
             self.ic_a = np.zeros( self.nbus )
             self.ic_m = np.ones( self.nbus )
-         
+        
         
         self.AA = np.zeros( (self.nbus, self.nline) )
         
@@ -150,7 +151,12 @@ class Model:
     
     def getic_gamma(self):
         
-        return np.ones( self.nline )
+        gg = np.ones( self.nline )
+        
+        if (self.takedown>=0):
+            gg[ self.takedown ] = 0
+            
+        return gg
         
     
     

@@ -68,7 +68,7 @@ class TrajSampler:
             anodes = np.ones( self.model.nbus )>0
             
             time = 0 
-            ls = 1.0
+            _,ls,_ = self.model.removeline( gamma , 0 )
             enum = 0
             EV,enum = self.addevent(EV,enum,time,ls,gamma)
             
