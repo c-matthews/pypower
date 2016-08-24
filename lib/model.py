@@ -16,7 +16,8 @@ class Model:
         self.eps = ini.getfloat("model","epsilon",0.05)
         self.seed = ini.getint("model","seed",0)
         self.use_ic = ini.getboolean("model","ic",False)
-        self.takedown = ini.getint("model","takedown",0) -1
+        self.takedown = ini.getint("model","remline",0) -1
+        self.nodedown = ini.getint("model","remnode",0) -1
         
     def config(self): 
          
@@ -155,6 +156,13 @@ class Model:
         
         if (self.takedown>=0):
             gg[ self.takedown ] = 0
+            
+        if (self.nodedown>=0):
+            
+            for jj in np.arange(self.nline):
+                i1,i2 = self.from_to[jj,:]-1
+                if (i1==self.nodedown) or (i2==self.nodedown):
+                    gg[ jj ] = 0
             
         return gg
         
