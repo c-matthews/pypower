@@ -2,6 +2,8 @@ import numpy as np
 import cmath
 from numpy import random
 import time
+from scipy.sparse import csr_matrix, csc_matrix
+
 
 class Model:
     
@@ -57,6 +59,8 @@ class Model:
             i1,i2 = self.from_to[jj,:]-1
             self.AA[ i1 , jj ] = 1.
             self.AA[ i2 , jj ] = -1.
+
+        self.sAAt = csr_matrix( self.AA.T )
             
         self.pq_data[ self.slacklist-1 , : ] = [0,0,0]
         self.pq_data[ self.slacklist-1 , : ] = -np.sum( self.pq_data, axis=0 )
@@ -76,7 +80,8 @@ class Model:
         
         self.bb = self.line_susceptances 
         self.oobb = 1.0 / self.bb
-        
+        self.oobbt = self.thresh / self.oobb
+
         #self.BB =    np.dot( self.AA , np.diag( self.bb ) ) 
         #self.BB = np.dot (self.BB , self.AA.T ) 
     
@@ -86,7 +91,9 @@ class Model:
         BB =    np.dot( self.AA , np.diag( self.bb * g ) ) 
         BB = np.dot (BB , self.AA.T ) 
         
-        return BB
+        sBB = csr_matrix( BB )
+
+        return sBB
     
         
     def dH_dfreq( self, f ):
@@ -97,8 +104,9 @@ class Model:
         
         v = m * np.exp( 1j * a )
     
-        factor = v * ( np.dot(ybus , v ) ).conjugate()
-        
+        #factor = v * ( np.dot(ybus , v ) ).conjugate()
+        factor = v * ( ybus.dot( v ) ).conjugate()
+
         ff = self.P - factor.imag
 
         #P=self.P
@@ -129,7 +137,8 @@ class Model:
     def dH_dmag(self,  a , m , ybus ):
     
         v = m * np.exp( 1j * a )
-        factor = (v) * ( np.dot(ybus , v ) ).conjugate()
+        #factor = (v) * ( np.dot(ybus , v ) ).conjugate()
+        factor = (v) * ( ybus.dot(v) ).conjugate()
         
         ff = (self.Q + factor.real)/m
         ff[ self.slacklist -1 ] = 0
@@ -141,7 +150,8 @@ class Model:
         
         v = m * np.exp( 1j * a )
     
-        factor = v * ( np.dot(ybus , v ) ).conjugate()
+        #factor = v * ( np.dot(ybus , v ) ).conjugate()
+        factor = v * ( ybus.dot(v) ).conjugate()
         
         fangle = self.P - factor.imag  
         fangle[ self.slacklist -1 ] = 0
@@ -171,7 +181,8 @@ class Model:
         
         v = mag * np.exp( 1j * angle )
         
-        Yv = np.dot( ybus , v )
+        Yv = ybus.dot(v) 
+        #Yv = np.dot( ybus , v )
         kk1 = (v.conjugate() * Yv ) 
         k1 = np.sum(kk1)*0.5
         
@@ -183,9 +194,10 @@ class Model:
             
         Energy = k1+k2+k3+k4
         
-        Av = np.dot( self.AA.T , v )
+        #Av = np.dot( self.AA.T , v )
+        Av = self.sAAt.dot(v)
         
-        LE = (Av.conjugate() * Av) * (self.bb * gamma)
+        LE = (Av.conjugate() * Av) * (self.bb * gamma) 
         
         df = freq
         da = self.P + kk1.imag
@@ -233,12 +245,16 @@ class Model:
     
     def checklines(self, le , gamma ):
         
-        nle = (gamma * le) * self.oobb
+        #nle = (gamma * le) * self.oobb
         
+        #nle = (gamma * le)
+        # le already has gamma in it
+         
+        overmask = np.ones( np.shape(le) ) 
 
-        overlim = nle > self.thresh
+        overlim = (overmask*le) > self.oobbt
         
-        isover = np.sum(overlim)>0
+        isover = np.array(overlim).any()  
         
         return isover,overlim
     

@@ -29,3 +29,4 @@ class Sampler:
     def run(self): 
             
             self.sampler.run()
+            

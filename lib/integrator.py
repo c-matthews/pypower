@@ -39,7 +39,8 @@ class Integrator:
         
     def adv(self, freq, angle, mag, N , gamma, anodes ):
         
-        ybus = self.model.assemble_ybus(gamma) 
+        ybus = self.model.assemble_ybus(gamma)  
+
         f = freq
         a = angle
         m = mag
@@ -72,7 +73,7 @@ class Integrator:
             f,a,m, xtra = self.step(f,a,m, df,da,dm, xtra, ybus, ann)
             
             en,le,df,da,dm = self.model.energy(f,a,m,ybus, g) 
-            
+             
             io,ol = self.model.checklines( le , g )
             
                 
@@ -149,18 +150,16 @@ class Integrator:
         #dhda,dhdm = self.model.dH_danglemag(aa,mm,yb )
         #dhdf = self.model.dH_dfreq( ff )  
 
-        ff[anodes] = ff[anodes] - self.dt * da[anodes]
-        aa[anodes] = aa[anodes] - (self.dt * self.model.eps) * da[anodes] + (0.5*self.sqdt) * ra[anodes]
-        aa[anodes] = aa[anodes] + self.dt * df[anodes]
-        mm[anodes] = mm[anodes] - (self.dt * self.model.eps) * dm[anodes] + (0.5*self.sqdt) * rm[anodes]
-        
-        ra = self.model.rand_angle()
-        rm = self.model.rand_mag()
-        aa[anodes] = aa[anodes] + (0.5*self.sqdt) * ra[anodes] 
-        mm[anodes] = mm[anodes] + (0.5*self.sqdt) * rm[anodes] 
-        
+        Ra = self.model.rand_angle()
+        Rm = self.model.rand_mag()
 
-        return ff,aa,mm,[ra,rm]
+        ff[anodes] = ff[anodes] - self.dt * da[anodes]
+        aa[anodes] = aa[anodes]  - (self.dt * self.model.eps) * da[anodes] + (0.5*self.sqdt) * ((Ra[anodes]+ ra[anodes]))
+        aa[anodes] = aa[anodes] + self.dt * df[anodes]
+        mm[anodes] = mm[anodes] - (self.dt * self.model.eps) * dm[anodes] + (0.5*self.sqdt) * ((Rm[anodes]+rm[anodes]) )
+               
+
+        return ff,aa,mm,[Ra,Rm]
 
     def step_euler(self, f, a, m, df,da,dm, xtra, yb, anodes):
 

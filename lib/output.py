@@ -1,4 +1,3 @@
- 
 import numpy as np
  
 import time
@@ -21,6 +20,7 @@ class Output:
         self.SaveLoad = ini.getboolean("output","saveload",True) 
         self.SaveEvents = ini.getboolean("output","saveevents",True) 
         self.SaveGraph = ini.getboolean("output","savegraph",False) 
+
 
         self.PrintFreq = ini.getint("output","printfreq",0)
         self.PrintTime = ini.getint("output","printtime",0)
@@ -94,7 +94,8 @@ class Output:
 
             if (self.SaveLineEnergy) and (len(self.LEList)>0):
                 path = self.OutputPath + "/le." +  str(id)
-                np.savetxt(path, self.LEList[ii] , fmt="%.4e") 
+                xx=self.LEList[ii]
+                np.savetxt(path, xx , fmt="%.4e") 
 
             if (self.SaveGamma) and (len(self.GList)>0):
                 path = self.OutputPath + "/g." +  str(id)
@@ -114,8 +115,11 @@ class Output:
                 
 
             if (self.SaveGraph) and (len(self.GList)>0):
-                path = self.OutputPath + "/graph." +  str(id)
-                self.WriteGraph( path , self.LEList[ii], self.GList[ii] )
+                le = self.LEList[ii]
+                g = self.GList[ii]
+                for jj in range( len( g[0,:] ) ):
+                    path = self.OutputPath + "/graph." +  str(id) + "." + str(jj)
+                    self.WriteGraph( path , le[:,jj] , g[:,jj]  )
                 
             
         
@@ -151,34 +155,50 @@ class Output:
         
 
     def WriteGraph(self, filename, LE, gamma):
-        
+          
         tfile = open(filename, "w")
         
-        tfile.write("graph G {")
+        tfile.write("graph G {\n")
+
+        tfile.write('node [label="",shape="circle",width=.25,height=.25]\n')
+        tfile.write('edge [style=bold]\n')
+        tfile.write('overlap=scale \n')
+        tfile.write('orientation=landscape\n')
+ 
+        for ii in range(len( self.model.from_to[:,0]) ):
+
+            ft = self.model.from_to[ii,:] 
+
+            zz = (LE[ii] / self.model.thresh) * gamma[ii]
+            cflt = 0.65*np.sqrt(1-zz)
+            lflt = 0.4 + 0.6*(zz>0.5)
+            if (cflt>0.65):
+                cflt = 0.65
+            if (cflt<0):
+                cflt = 0
+            if (lflt>1):
+                lflt = 1
+            if (lflt<0):
+                lflt=0
+ 
+            sstr = ""
+
+            if (gamma[ii]==0):
+                sstr = ",style=dotted"
+            else:
+                if (zz>0.5):
+                    sstr = ",style=bold"
+            
+            s = str(int( ft[0] ) ) + " -- " + str(int(ft[1])) + ' [color="' + str(cflt) + ',' + str(lflt) +',1.0]"' + sstr + "];\n"
+
+            tfile.write(s)
         
-            for ii in range(len( self.model.from_to[0,:]) ):
-                
-                ft = self.model.from_to[ii,:]
-                
-                if (gamma[ii]==0):
-                    style = "invis"
-                else:
-                    style = "bold"
-                    
-                cflt = 0 + 0.65*LE[ii]
-                if (cflt>0.65):
-                    cflt = 0.65
-                if (cflt<0):
-                    cflt = 0
-                    
-                
-                s = str(int( ft[0] ) ) + " -- " + str(int(ft[1])) + ' [color="' + str(cflt) + ',1.0,0.5]",style=' + style + "];"
-                
-                tfile.write(s)
-        
-        tfile.write("}")
+        tfile.write("}\n")
         
         tfile.close()
 
         
     
+
+
+

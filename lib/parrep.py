@@ -28,7 +28,7 @@ class ParRep:
         self.s_decor = 1 + int(self.t_decor / self.ig.dt)
         self.s_dephase = 1 + int(self.t_dephase / self.ig.dt)
         
-    def add_event(self,G,LS,T,enum,g,nls, time,EV_):
+    def add_event(self,G,LS,T,enum,g,nls, time,EV_, lo):
         
         GG = G
         LSLS = LS
@@ -38,7 +38,8 @@ class ParRep:
         if (self.output.SaveEvents):    
             EV[0,enum] = time
             EV[1,enum] = nls
-            EV[2:,enum] = g
+            EV[2,enum] = lo
+            EV[3:,enum] = g
         
         
         if (self.output.SaveTime):    TT[enum] = time
@@ -91,19 +92,30 @@ class ParRep:
             if (self.output.SaveGamma):    G = np.ones( (self.model.nline , self.maxevents) )
             if (self.output.SaveLoad):    LS = np.ones( self.maxevents )
             if (self.output.SaveTime):    T = np.zeros( self.maxevents )
-            if (self.output.SaveEvents):    EV = np.zeros( (  len(gamma)+2 , self.model.nline ) )
+            if (self.output.SaveEvents):    EV = np.zeros( (  len(gamma)+3 , self.model.nline ) )
+            
+            
+            # Do burn in
+
+            nburn = int(self.model.burntime / self.ig.dt)
+            _,_,anodes = self.model.removeline( np.ones( self.model.nline ) , 0 )
+            if nburn>0:
+                f,a,m,_,_,_,_,_,_,_,_,_,_  = self.ig.adv( f, a , m , nburn , np.ones( self.model.nline ) , anodes )
+
+
+
             enum = 0
             
             time = 0.0
-            _,ls,_ = self.model.removeline( gamma , 0 )
+            _,ls,anodes = self.model.removeline( gamma , 0 )
             
-            anodes = np.ones( self.model.nbus )>0
+            #anodes = np.ones( self.model.nbus )>0
             
             if (myid==0):
                 print ""
                 print " -- Beginning run %d." % (repnum+1)
                 print ""
-                G,LS,T,enum,EV = self.add_event(G,LS,T,enum, gamma, ls, time,EV )
+                G,LS,T,enum,EV = self.add_event(G,LS,T,enum, gamma, ls, time,EV,0 )
                 
             
             while (  self.ig.keepgoing( time , gamma, ls  )  ):
@@ -117,17 +129,17 @@ class ParRep:
                     print "DECOR step, time: %f  ls:%f    events: %d." % (time, ls, enum)
                     
                     while (jj < self.s_decor) and ( self.ig.keepgoing( time , gamma, ls  ) ):
-                        #f,a,m,F,A,M,E,L,jj,g,nls = self.ig.adv( f, a , m , self.s_decor , gamma )
-                        #f,a,m,jj,gamma,nls = self.ig.adv( f, a , m , self.s_decor , gamma )[0,1,2,8,9,10]
-                        f,a,m,_,_,_,_,_,jj,g,nls,anodes = self.ig.adv( f, a , m , self.s_decor , gamma,anodes ) 
-                    
+                        #f,a,m,F,A,M,E,L,jj,g,nls,lineout = self.ig.adv( f, a , m , self.s_decor , gamma )
+                        #f,a,m,jj,gamma,nls,lineout = self.ig.adv( f, a , m , self.s_decor , gamma )[0,1,2,8,9,10]
+                        f,a,m,_,_,_,_,_,jj,g,nls,anodes,lineout = self.ig.adv( f, a , m , self.s_decor , gamma,anodes ) 
+                        
                         time += jj * self.ig.dt
                         gg = gamma
                         gamma = g 
                         
                         
                         if (self.diff_g(g,gg) ):
-                            G,LS,T,enum,EV = self.add_event(G,LS,T,enum, gamma, nls, time,EV )
+                            G,LS,T,enum,EV = self.add_event(G,LS,T,enum, gamma, nls, time,EV,lineout )
                             jj=0
                             ls = nls
                             print " - event, time: %f   ls: %f     events: %d." % (time, ls , enum)
@@ -149,25 +161,50 @@ class ParRep:
                 M = np.tile(m, (ntasks,1) ).T
                 if (myid==0):
                     print "DEPHASE step, time: %f  ls:%f    events: %d." % (time, ls, enum)
+                     
+
+                for ii in range(ntasks):
+                    FF = F[:,ii]
+                    AA = A[:,ii]
+                    MM = M[:,ii] 
+
+                    while (True):
+
+                        f = np.copy(FF)
+                        a = np.copy(AA)
+                        m = np.copy(MM)
+
+                        f,a,m,_,_,_,_,_,_,g,_,_,lineout = self.ig.adv( f, a , m , self.s_dephase , gamma,anodes )
+
+                        if (self.diff_g(g,gamma)):
+                            FF = np.random.normal(scale=np.std(FF.flatten()), size=np.shape(FF) )
+                            continue
+
+                        break
                     
-                for tt in np.arange( self.s_dephase ):
+                    F[:,ii] = f
+                    A[:,ii] = a
+                    M[:,ii] = m
+
                     
-                    for ii in np.arange( ntasks ) :
-                        f = F[:,ii]
-                        a = A[:,ii]
-                        m = M[:,ii]  
-                        
-                        f,a,m,_,_,_,_,_,_,g,_,_ = self.ig.adv( f, a , m , 1 , gamma,anodes ) 
-                                    
-                        if (self.diff_g(g,gamma)): 
-                            ri =  self.model.Random.randint( ii+1 ) 
-                            f = F[:,ri]
-                            a = A[:,ri]
-                            m = M[:,ri] 
-                                        
-                        F[:,ii] = f
-                        A[:,ii] = a
-                        M[:,ii] = m
+                #for tt in np.arange( int( self.s_dephase*0.1) ):
+                    
+                #    for ii in np.arange( ntasks ) :
+                #        f = F[:,ii]
+                #        a = A[:,ii]
+                #        m = M[:,ii]  
+                #        
+                #        f,a,m,_,_,_,_,_,_,g,_,_,lineout = self.ig.adv( f, a , m , 10 , gamma,anodes ) 
+                #                    
+                #        if (self.diff_g(g,gamma)): 
+                #            ri =  self.model.Random.randint( ii+1 ) 
+                #            f = F[:,ri]
+                #            a = A[:,ri]
+                #            m = M[:,ri] 
+                #                        
+                #        F[:,ii] = f
+                #        A[:,ii] = a
+                #        M[:,ii] = m
                      
                 
                 ####
@@ -179,16 +216,19 @@ class ParRep:
                     print "PARALLEL step, time: %f  ls:%f    events: %d." % (time, ls, enum)
                     
                 event = -1
+                etime = self.pstep +1
                 gchk  = -1
+                jj = 0
 
                 while (self.ig.keepgoing( time , gamma, ls  ) ):
                     
                     for ii in np.arange( ntasks ):
                         
-                        F[:,ii], A[:,ii] , M[:,ii],_,_,_,_,_,jj,g,nls, ann = self.ig.adv( F[:,ii], A[:,ii] , M[:,ii] , self.pstep , gamma, anodes ) 
+                        F[:,ii], A[:,ii] , M[:,ii],_,_,_,_,_,jj,g,nls, ann,lineout = self.ig.adv( F[:,ii], A[:,ii] , M[:,ii] , self.pstep , gamma, anodes ) 
                     
                         if (self.diff_g(g,gamma)):
                             event = myid
+                            etime = jj
                             break
                     
                     gchk = self.comm.allreduce( event, op=MPI.MAX )
@@ -196,20 +236,26 @@ class ParRep:
                     if (gchk<0 ):
                         time += self.ig.dt * self.pstep * self.walkers
                     else:
-                        jj = self.comm.bcast( jj , root= gchk )
+                        gtime = self.comm.allreduce( etime, op=MPI.MINLOC )
+                        #print [jj, MPI.COMM_WORLD.Get_rank(), ntasks]
+                        etime = gtime[0]
+                        gchk = gtime[1]
+                        jj = etime  #self.comm.bcast( jj , root= gchk )
                         gamma = self.comm.bcast( g , root= gchk )
                         ls = self.comm.bcast( nls , root= gchk )
                         f = self.comm.bcast( F[:,ii] , root= gchk )
                         a = self.comm.bcast( A[:,ii] , root= gchk )
                         m = self.comm.bcast( M[:,ii] , root= gchk )
                         anodes = self.comm.bcast( ann , root= gchk )
-                        time += self.ig.dt * self.pstep * ( float(gchk)  / self.walkers ) + jj * self.ig.dt
+                        lineout = self.comm.bcast( lineout , root= gchk )
+                        time +=  etime * self.ig.dt * self.walkers + gchk * self.ig.dt
+                        #time += self.ig.dt * self.pstep * ( float(gchk)  / self.walkers ) + jj * self.ig.dt
                         break
                     
                 
                         
                 if (gchk>=0) and (myid==0):
-                    G,LS,T,enum,EV = self.add_event(G,LS,T,enum, gamma, ls, time,EV )
+                    G,LS,T,enum,EV = self.add_event(G,LS,T,enum, gamma, ls, time,EV ,lineout )
                     print " - event, time: %f   ls: %f     events: %d." % (time, ls , enum)
             
             
@@ -230,4 +276,5 @@ class ParRep:
         else:
             return False
     
+         
         
