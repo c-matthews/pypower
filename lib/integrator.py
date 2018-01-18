@@ -10,6 +10,7 @@ class Integrator:
         self.output = output
           
         self.dt = ini.getfloat("integrator","timestep") 
+        self.stepstyle = ini.get("integrator","style","default") 
           
         self.stoptime = ini.getfloat("integrator","stop_time", 10000.0)  
         self.stoplines = ini.getint("integrator","stop_lines", self.model.nline)  
@@ -18,7 +19,23 @@ class Integrator:
     def config(self): 
           
         self.dt2 = self.dt * 0.5
+        self.dt4 = self.dt2 * 0.5
         self.sqdt = np.sqrt(self.dt)
+        self.sqdt2 = np.sqrt(self.dt2)
+        self.sqdt4 = np.sqrt(self.dt4) 
+
+        self.step = self.step_lm
+        if (self.stepstyle=="euler"):
+            self.step = self.step_euler
+
+        if (self.stepstyle=="heun"):
+            self.step = self.step_heun
+
+        if (self.stepstyle=="lm"):
+            self.step = self.step_lm 
+
+        if (self.stepstyle=="baoab"):
+            self.step = self.step_baoab 
         
     def adv(self, freq, angle, mag, N , gamma, anodes ):
         
@@ -28,7 +45,8 @@ class Integrator:
         m = mag
         g = gamma
         ann = anodes
-        
+
+        lineout = 0
             
         F = np.array([])
         A = np.array([]) 
@@ -44,13 +62,16 @@ class Integrator:
         if (self.output.SaveLineEnergy):    LE = np.zeros( (self.model.nline, N) )
         
         ii = 0
+        io = 0
         nls = -1 
-        
+        xtra = None
+        en,le,df,da,dm = self.model.energy(f,a,m,ybus, g) 
+
         while ii<N :
             
-            f,a,m = self.step(f,a,m, ybus, ann)
+            f,a,m, xtra = self.step(f,a,m, df,da,dm, xtra, ybus, ann)
             
-            en,le = self.model.energy(f,a,m,ybus, g) 
+            en,le,df,da,dm = self.model.energy(f,a,m,ybus, g) 
             
             io,ol = self.model.checklines( le , g )
             
@@ -60,32 +81,136 @@ class Integrator:
             if (self.output.SaveTraj):    A[:,ii] = a
             if (self.output.SaveTraj):    M[:,ii] = m
             if (self.output.SaveEnergy):    EN[ii] = en
-            if (self.output.SaveLineEnergy):    LE[:,ii] = le
+            if (self.output.SaveLineEnergy):    LE[:,ii] = le * self.model.oobb
             
             ii+=1
             
             if io: 
-                #print "fail!"
-                #print 1+np.arange(self.model.nline)[ol] 
+                lineout = 1+np.arange(self.model.nline)[ol]
+                if len(lineout)>1:
+                    lineout = lineout[0]
+                    
                 g, nls, ann = self.model.removeline(g , ol )
                 break
             
-        return f,a,m,F,A,M,EN,LE,ii,g, nls, ann
-            
-            
-    def step(self, f, a, m, yb, anodes):
+        return f,a,m,F,A,M,EN,LE,ii,g, nls, ann, lineout
+ 
+
+    def step_heun(self, f, a, m, df,da,dm,xtra, yb, anodes):
+
+        ff=f
+        aa=a
+        mm=m
+
+        #dhda,dhdm = self.model.dH_danglemag(aa,mm,yb )
+        #dhdf = self.model.dH_dfreq( ff ) 
+
+        ka = np.copy(aa)
+        km = np.copy(mm)
+        kf = np.copy(ff)
+        ra = self.model.rand_angle()  
+        rm = self.model.rand_mag() 
+
+        kf[anodes] = ff[anodes] - self.dt * da[anodes]
+        ka[anodes] = aa[anodes] - (self.dt * self.model.eps) * da[anodes] + self.sqdt * ra[anodes]
+        ka[anodes] = ka[anodes] + self.dt * df[anodes]
+        km[anodes] = mm[anodes] - (self.dt * self.model.eps) * dm[anodes] + self.sqdt * rm[anodes]
         
-        f[anodes] = f[anodes] - self.dt2 * self.model.dH_dangle(a,m,yb )[anodes]
+
+
+        dhda2,dhdm2 = self.model.dH_danglemag(ka,km,yb )
+        dhdf2 = self.model.dH_dfreq( kf ) 
+
+        dhda = (da + dhda2)*0.5
+        dhdm = (dm + dhdm2)*0.5
+        dhdf = (df + dhdf2)*0.5
+
+        ff[anodes] = ff[anodes] - self.dt * dhda[anodes]
+        aa[anodes] = aa[anodes] - (self.dt * self.model.eps) * dhda[anodes] + self.sqdt * ra[anodes]
+        aa[anodes] = aa[anodes] + self.dt * dhdf[anodes]
+        mm[anodes] = mm[anodes] - (self.dt * self.model.eps) * dhdm[anodes] + self.sqdt * rm[anodes]
         
-        a[anodes] = a[anodes] + self.dt * self.model.dH_dfreq( f )[anodes]
+        return ff,aa,mm,None
+
+    def step_lm(self, f, a, m, df,da,dm,xtra, yb, anodes):
+
+        ff=f
+        aa=a
+        mm=m
+
+        if (xtra==None):
+            ra = self.model.rand_angle()
+            rm = self.model.rand_mag()
+        else:
+            ra = xtra[0]
+            rm = xtra[1]
+
+
+        #dhda,dhdm = self.model.dH_danglemag(aa,mm,yb )
+        #dhdf = self.model.dH_dfreq( ff )  
+
+        ff[anodes] = ff[anodes] - self.dt * da[anodes]
+        aa[anodes] = aa[anodes] - (self.dt * self.model.eps) * da[anodes] + (0.5*self.sqdt) * ra[anodes]
+        aa[anodes] = aa[anodes] + self.dt * df[anodes]
+        mm[anodes] = mm[anodes] - (self.dt * self.model.eps) * dm[anodes] + (0.5*self.sqdt) * rm[anodes]
         
-        f[anodes] = f[anodes] - self.dt2 * self.model.dH_dangle(a,m,yb )[anodes]
+        ra = self.model.rand_angle()
+        rm = self.model.rand_mag()
+        aa[anodes] = aa[anodes] + (0.5*self.sqdt) * ra[anodes] 
+        mm[anodes] = mm[anodes] + (0.5*self.sqdt) * rm[anodes] 
         
-        m[anodes] = m[anodes] - self.dt * self.model.eps * self.model.dH_dmag(a,m,yb)[anodes] + self.sqdt * self.model.rand_mag()[anodes]
-        
-        a[anodes] = a[anodes] - self.dt * self.model.eps * self.model.dH_dangle(a,m,yb)[anodes] + self.sqdt * self.model.rand_angle()[anodes]
-        
-        return f,a,m
+
+        return ff,aa,mm,[ra,rm]
+
+    def step_euler(self, f, a, m, df,da,dm, xtra, yb, anodes):
+
+        ff=f
+        aa=a
+        mm=m
+
+        #dhda,dhdm = self.model.dH_danglemag(aa,mm,yb )
+        #dhdf = self.model.dH_dfreq( ff ) 
+
+        ff[anodes] = ff[anodes] - self.dt * da[anodes]
+        aa[anodes] = aa[anodes] - (self.dt * self.model.eps) * da[anodes] + self.sqdt * self.model.rand_angle()[anodes]
+        aa[anodes] = aa[anodes] + self.dt * df[anodes]
+        mm[anodes] = mm[anodes] - (self.dt * self.model.eps) * dm[anodes] + self.sqdt * self.model.rand_mag()[anodes]
+         
+
+        return ff,aa,mm,None
+
+    def step_baoab(self, f, a, m, df,da,dm, xtra, yb, anodes):
+
+        ff=f
+        aa=a
+        mm=m
+ 
+
+        ff[anodes] = ff[anodes] - self.dt * da[anodes]
+        aa[anodes] = aa[anodes] + self.dt2 * self.model.dH_dfreq( ff )[anodes]
+
+        dhda,dhdm = self.model.dH_danglemag(aa,mm,yb )
+        ra  = self.model.rand_angle()
+        rm  = self.model.rand_mag()
+        ka = np.copy( aa )
+        km = np.copy( mm )
+
+        ka[anodes] = aa[anodes] - (self.dt * self.model.eps) * dhda[anodes] + self.sqdt * ra[anodes]
+        km[anodes] = mm[anodes] - (self.dt * self.model.eps) * dhdm[anodes] + self.sqdt * rm[anodes]
+         
+        dhda2,dhdm2 = self.model.dH_danglemag(ka,km,yb )
+
+        aa[anodes] = aa[anodes] - (self.dt2 * self.model.eps) * (dhda2[anodes] + dhda[anodes]) + self.sqdt * ra[anodes]
+        mm[anodes] = mm[anodes] - (self.dt2 * self.model.eps) * (dhdm2[anodes] + dhdm[anodes]) + self.sqdt * rm[anodes]
+         
+        aa[anodes] = aa[anodes] + self.dt2 * self.model.dH_dfreq( ff )[anodes]
+
+
+
+
+
+
+        return ff,aa,mm,None
         
     def keepgoing(self, time, g , ls ):
         

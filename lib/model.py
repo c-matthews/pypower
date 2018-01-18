@@ -14,10 +14,12 @@ class Model:
         self.loadscale = ini.getfloat("model","load_scale",1.0)
         self.thresh = ini.getfloat("model","thresh",0.3)
         self.eps = ini.getfloat("model","epsilon",0.05)
+        self.kt = ini.getfloat("model","kt",1.0)
         self.seed = ini.getint("model","seed",0)
         self.use_ic = ini.getboolean("model","ic",False)
         self.takedown = ini.getint("model","remline",0) -1
         self.nodedown = ini.getint("model","remnode",0) -1
+        self.burntime = ini.getfloat("model","burntime",0) 
         
     def config(self): 
          
@@ -67,10 +69,13 @@ class Model:
         self.Q = self.snet.imag
         self.Q[ self.genlist-1 ] = 0
         
-        self.sigmaP = np.sqrt( np.abs( self.P ) ) * np.sqrt(self.eps)
-        self.sigmaQ = np.sqrt( np.abs( self.Q ) ) * np.sqrt(self.eps)
+        #  self.sigmaP = self.noisemag*np.sqrt( np.abs( self.P ) ) * np.sqrt(self.eps)
+        #  self.sigmaQ = self.noisemag*np.sqrt( np.abs( self.Q ) ) * np.sqrt(self.eps)
+        self.sigmaP =    np.sqrt(self.kt*2*self.eps)
+        self.sigmaQ =    np.sqrt(self.kt*2*self.eps)
         
         self.bb = self.line_susceptances 
+        self.oobb = 1.0 / self.bb
         
         #self.BB =    np.dot( self.AA , np.diag( self.bb ) ) 
         #self.BB = np.dot (self.BB , self.AA.T ) 
@@ -95,6 +100,28 @@ class Model:
         factor = v * ( np.dot(ybus , v ) ).conjugate()
         
         ff = self.P - factor.imag
+
+        #P=self.P
+        #print P[0] -
+        #zz1 = P[0] + 0
+        #zz2 = P[0] + 0
+        #zz3 = P[0] + 0 
+
+        #print ybus[0,:]
+        
+        #for jj in np.arange( self.nbus) :
+        #    zz1 += m[0] * m[jj] * ybus[0,jj] * (np.cos( a[0] - a[jj] ) - np.sin( a[0] - a[jj]) )
+        #    zz2 += m[0] * m[jj] * ybus[0,jj] * (np.cos( a[0] - a[jj] ) + 0*np.sin( a[0] - a[jj]) )
+        #    zz3 += m[0] * m[jj] * ybus[0,jj] * (0*np.cos( a[0] - a[jj] ) - np.sin( a[0] - a[jj]) )
+            
+        #print ""
+        #print [ff[0],zz1,zz2,zz3]
+        #print ""
+        
+        #exit()
+        
+        
+        
         ff[ self.slacklist -1 ] = 0
         
         return ff
@@ -109,6 +136,21 @@ class Model:
         ff[ self.genlist -1 ] = 0
         
         return ff
+    
+    def dH_danglemag( self, a , m , ybus ): 
+        
+        v = m * np.exp( 1j * a )
+    
+        factor = v * ( np.dot(ybus , v ) ).conjugate()
+        
+        fangle = self.P - factor.imag  
+        fangle[ self.slacklist -1 ] = 0
+        
+        fmag = (self.Q + factor.real)/m
+        fmag[ self.slacklist -1 ] = 0
+        fmag[ self.genlist -1 ] = 0
+
+        return fangle, fmag 
     
     def rand_angle(self  ):
     
@@ -130,23 +172,30 @@ class Model:
         v = mag * np.exp( 1j * angle )
         
         Yv = np.dot( ybus , v )
-        k1 = (v.conjugate() * Yv )*0.5
-        k1 = np.sum(k1)
+        kk1 = (v.conjugate() * Yv ) 
+        k1 = np.sum(kk1)*0.5
         
         k2 = np.dot( freq , freq ) * 0.5
         
         k3 = np.dot( self.P , angle )
-        
+
         k4 = np.dot( self.Q , np.log(mag) )
-        
+            
         Energy = k1+k2+k3+k4
         
         Av = np.dot( self.AA.T , v )
         
-        LE = (Av.conjugate() * Av) * self.bb * gamma
+        LE = (Av.conjugate() * Av) * (self.bb * gamma)
         
+        df = freq
+        da = self.P + kk1.imag
+        dm = (self.Q + kk1.real)/mag
+        da[ self.slacklist -1 ] = 0
         
-        return Energy.real , LE.real
+        dm[ self.slacklist -1 ] = 0
+        dm[ self.genlist -1 ] = 0
+
+        return Energy.real , LE.real, df, da, dm
     
     
     
@@ -163,7 +212,7 @@ class Model:
                 i1,i2 = self.from_to[jj,:]-1
                 if (i1==self.nodedown) or (i2==self.nodedown):
                     gg[ jj ] = 0
-            
+        
         return gg
         
     
@@ -184,8 +233,9 @@ class Model:
     
     def checklines(self, le , gamma ):
         
-        nle = gamma * le / self.bb
+        nle = (gamma * le) * self.oobb
         
+
         overlim = nle > self.thresh
         
         isover = np.sum(overlim)>0

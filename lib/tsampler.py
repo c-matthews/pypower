@@ -21,13 +21,14 @@ class TrajSampler:
         
         self.steps = 1 + int( self.stoptime / self.ig.dt )
         
-    def addevent(self, EV_, enum_,t,ls,g):
+    def addevent(self, EV_, enum_,t,ls,g, lo):
         
         EV = EV_
         if (self.output.SaveEvents):    
             EV[0,enum_] = t
             EV[1,enum_] = ls
-            EV[2:,enum_] = g
+            EV[2,enum_] = lo
+            EV[3:,enum_] = g
         
         return EV, enum_ + 1
     
@@ -59,25 +60,30 @@ class TrajSampler:
             if (self.output.SaveTraj):    FF = np.zeros( ( len(f), self.steps ) )
             if (self.output.SaveTraj):    AA = np.zeros( ( len(f), self.steps ) )
             if (self.output.SaveTraj):    MM = np.zeros( ( len(f), self.steps ) )
-            if (self.output.SaveEvents):    EV = np.zeros( (  len(gamma)+2 , self.model.nline ) )
+            if (self.output.SaveEvents):    EV = np.zeros( (  len(gamma)+3 , self.model.nline ) )
             if (self.output.SaveEnergy):    EN = np.zeros( (  self.steps ) )
             if (self.output.SaveLineEnergy):    LE = np.zeros( ( self.model.nline, self.steps ) )
             if (self.output.SaveGamma):    G = np.tile(gamma, (self.steps,1) ).T
             if (self.output.SaveLoad):    LS = np.ones( (  self.steps ) )
-            
-            anodes = np.ones( self.model.nbus )>0
-            
+                        
+            # Do burn in
+
+            nburn = int(self.model.burntime / self.ig.dt)
+            _,_,anodes = self.model.removeline( np.ones( self.model.nline ) , 0 )
+            if nburn>0:
+                f,a,m,_,_,_,_,_,_,_,_,_,_  = self.ig.adv( f, a , m , nburn , np.ones( self.model.nline ) , anodes )
+
             time = 0 
-            _,ls,_ = self.model.removeline( gamma , 0 )
+            _,ls,anodes = self.model.removeline( gamma , 0 )
             enum = 0
-            EV,enum = self.addevent(EV,enum,time,ls,gamma)
+            EV,enum = self.addevent(EV,enum,time,ls,gamma,0)
             
             
             
             while self.ig.keepgoing( time , gamma, ls  ) :
                  
                 
-                f,a,m,F,A,M,E,L,jj,g,nls, anodes = self.ig.adv( f, a , m , self.steps - ii , gamma, anodes )
+                f,a,m,F,A,M,E,L,jj,g,nls, anodes,lo  = self.ig.adv( f, a , m , self.steps - ii , gamma, anodes )
                 
                 if (self.output.SaveTraj):    FF[:,ii:] = np.copy(F)
                 if (self.output.SaveTraj):    AA[:,ii:] = np.copy(A)
@@ -90,7 +96,7 @@ class TrajSampler:
                 if nls>=0:
                     if (self.output.SaveLoad):    LS[ii:] = nls 
                     ls = nls
-                    EV,enum = self.addevent(EV,enum,time,ls,g)
+                    EV,enum = self.addevent(EV,enum,time,ls,g,lo)
                 
                 gamma = g
                 if (self.output.SaveGamma):    G[:,ii:] = np.tile(gamma, (self.steps-ii,1) ).T

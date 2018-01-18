@@ -25,7 +25,7 @@ def main( inistr ):
     myModel = Model( ini, comm )
     myModel.config()
     
-    myOutput = Output( ini, comm )
+    myOutput = Output( ini, comm, myModel )
     myOutput.config()
     
     myIntegrator = Integrator( ini, comm, myModel, myOutput )

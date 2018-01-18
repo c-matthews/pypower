@@ -7,7 +7,7 @@ import os
 
 class Output:
 
-    def __init__(self, ini, comm ):
+    def __init__(self, ini, comm, model ):
 
         self.OutputPath = ini.get("output","dir")
 
@@ -20,6 +20,7 @@ class Output:
         self.SaveTime = ini.getboolean("output","savetime",True) 
         self.SaveLoad = ini.getboolean("output","saveload",True) 
         self.SaveEvents = ini.getboolean("output","saveevents",True) 
+        self.SaveGraph = ini.getboolean("output","savegraph",False) 
 
         self.PrintFreq = ini.getint("output","printfreq",0)
         self.PrintTime = ini.getint("output","printtime",0)
@@ -27,6 +28,7 @@ class Output:
         self.ostep = ini.getint("output","savefreq",1)
         
         self.comm = comm
+        self.model = model
 
 
         
@@ -60,6 +62,7 @@ class Output:
         self.TList = list()
         self.LSList = list()
         self.EVList = list()
+        self.GraphList = list()
         
         self.lastprinttime = 0
         self.lastprintsteps = 0
@@ -109,6 +112,10 @@ class Output:
                 path = self.OutputPath + "/ev." +  str(id)
                 np.savetxt(path, self.EVList[ii] , fmt="%.5e") 
                 
+
+            if (self.SaveGraph) and (len(self.GList)>0):
+                path = self.OutputPath + "/graph." +  str(id)
+                self.WriteGraph( path , self.LEList[ii], self.GList[ii] )
                 
             
         
@@ -125,10 +132,10 @@ class Output:
         if (self.SaveEnergy) and (np.size(EN)>0):
             self.ENList.append( np.copy( EN[::self.ostep] ) ) 
 
-        if (self.SaveLineEnergy) and (np.size(LE)>0):
+        if (self.SaveLineEnergy or self.SaveGraph) and (np.size(LE)>0):
             self.LEList.append( np.copy( LE[:,::self.ostep] ) ) 
 
-        if (self.SaveGamma) and (np.size(G)>0):
+        if (self.SaveGamma or self.SaveGraph) and (np.size(G)>0):
             self.GList.append( np.copy( G[:,::self.ostep] ) ) 
 
         if (self.SaveTime) and (np.size(T)>0):
@@ -138,9 +145,40 @@ class Output:
             self.LSList.append( np.copy( LS[::self.ostep] ) ) 
 
         if (self.SaveEvents) and (np.size(EV)>0):
-            self.EVList.append( np.copy( EV[::self.ostep] ) ) 
+            self.EVList.append( np.copy( EV[::self.ostep] ) )  
             
               
         
+
+    def WriteGraph(self, filename, LE, gamma):
+        
+        tfile = open(filename, "w")
+        
+        tfile.write("graph G {")
+        
+            for ii in range(len( self.model.from_to[0,:]) ):
+                
+                ft = self.model.from_to[ii,:]
+                
+                if (gamma[ii]==0):
+                    style = "invis"
+                else:
+                    style = "bold"
+                    
+                cflt = 0 + 0.65*LE[ii]
+                if (cflt>0.65):
+                    cflt = 0.65
+                if (cflt<0):
+                    cflt = 0
+                    
+                
+                s = str(int( ft[0] ) ) + " -- " + str(int(ft[1])) + ' [color="' + str(cflt) + ',1.0,0.5]",style=' + style + "];"
+                
+                tfile.write(s)
+        
+        tfile.write("}")
+        
+        tfile.close()
+
         
     
