@@ -5,7 +5,7 @@ __pycache__/
 
 # temp files
 *~
-test/
+test/output/
 
 # C extensions
 *.so
