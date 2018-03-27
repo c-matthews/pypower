@@ -38,7 +38,7 @@ class Integrator:
             self.step = self.step_baoab 
         
     def adv(self, freq, angle, mag, N , gamma, anodes ):
-        
+        # Advance
         ybus = self.model.assemble_ybus(gamma)  
 
         f = freq
@@ -169,6 +169,8 @@ class Integrator:
 
         #dhda,dhdm = self.model.dH_danglemag(aa,mm,yb )
         #dhdf = self.model.dH_dfreq( ff ) 
+
+        #sqdt = square root time step
 
         ff[anodes] = ff[anodes] - self.dt * da[anodes]
         aa[anodes] = aa[anodes] - (self.dt * self.model.eps) * da[anodes] + self.sqdt * self.model.rand_angle()[anodes]
