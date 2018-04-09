@@ -3,7 +3,7 @@ import cmath
 from numpy import random
 import time
 from scipy.sparse import csr_matrix, csc_matrix
-
+from sys import exit
 
 class Model:
     
@@ -83,7 +83,10 @@ class Model:
         self.oobbt = self.thresh / self.oobb
 
         #self.BB =    np.dot( self.AA , np.diag( self.bb ) ) 
-        #self.BB = np.dot (self.BB , self.AA.T ) 
+        #self.BB = np.dot (self.BB , self.AA.T )
+
+        # keep track of the time (in seconds)
+        self.time = 0
     
     def assemble_ybus(self, g):
          
@@ -179,20 +182,38 @@ class Model:
     
     def energy(self, freq, angle, mag, ybus, gamma ):
         
+
+        # Update load with time dependence
+        # we start with a very simple model:
+        #
+        # P(t) = P_m * (1.0 + alpha*sin(\omega t))
+        # where
+        omega = np.pi/(3600*24)
+        alpha = 0.1
+
+
+        P = self.P
+        Q = self.Q
+
+        if True:
+            P[self.loadlist - 1] = P[self.loadlist - 1]*(alpha*np.sin(omega*self.time) + 1)
+
+
         v = mag * np.exp( 1j * angle )
         
         Yv = ybus.dot(v) 
         #Yv = np.dot( ybus , v )
         kk1 = (v.conjugate() * Yv ) 
+        
         k1 = np.sum(kk1)*0.5
         
-        k2 = np.dot( freq , freq ) * 0.5
+        k2 = np.dot(freq , freq)*0.5
         
-        k3 = np.dot( self.P , angle )
+        k3 = np.dot(P ,angle)
 
-        k4 = np.dot( self.Q , np.log(mag) )
+        k4 = np.dot(Q, np.log(mag))
             
-        Energy = k1+k2+k3+k4
+        Energy = k1 + k2 + k3 + k4
         
         #Av = np.dot( self.AA.T , v )
         Av = self.sAAt.dot(v)
@@ -200,12 +221,15 @@ class Model:
         LE = (Av.conjugate() * Av) * (self.bb * gamma) 
         
         df = freq
-        da = self.P + kk1.imag
-        dm = (self.Q + kk1.real)/mag
+        da = P + kk1.imag
+        dm = (Q + kk1.real)/mag
         da[ self.slacklist -1 ] = 0
         
         dm[ self.slacklist -1 ] = 0
         dm[ self.genlist -1 ] = 0
+
+
+        #exit()
 
         return Energy.real , LE.real, df, da, dm
     

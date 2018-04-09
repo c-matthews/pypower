@@ -38,7 +38,18 @@ class Integrator:
             self.step = self.step_baoab 
         
     def adv(self, freq, angle, mag, N , gamma, anodes ):
-        # Advance
+        """ Advance system
+
+            Args:
+            + freq: system frequency
+            + angle: voltage angle
+            + mag: voltage magnitude
+            + N: what is this?
+            + gamma: 
+
+            Return
+
+        """
         ybus = self.model.assemble_ybus(gamma)  
 
         f = freq
@@ -66,17 +77,15 @@ class Integrator:
         io = 0
         nls = -1 
         xtra = None
-        en,le,df,da,dm = self.model.energy(f,a,m,ybus, g) 
+        en, le, df, da, dm = self.model.energy(f, a, m, ybus, g) 
 
-        while ii<N :
+        self.time = 0
+
+        while ii < N :
             
-            f,a,m, xtra = self.step(f,a,m, df,da,dm, xtra, ybus, ann)
-            
-            en,le,df,da,dm = self.model.energy(f,a,m,ybus, g) 
-             
-            io,ol = self.model.checklines( le , g )
-            
-                
+            f, a, m, xtra = self.step(f, a, m, df, da, dm, xtra, ybus, ann)
+            en, le, df, da, dm = self.model.energy(f, a, m, ybus, g)
+            io, ol = self.model.checklines(le , g)
             
             if (self.output.SaveTraj):    F[:,ii] = f
             if (self.output.SaveTraj):    A[:,ii] = a
@@ -84,14 +93,16 @@ class Integrator:
             if (self.output.SaveEnergy):    EN[ii] = en
             if (self.output.SaveLineEnergy):    LE[:,ii] = le * self.model.oobb
             
-            ii+=1
+            ii += 1
+            self.model.time += self.dt
             
             if io: 
-                lineout = 1+np.arange(self.model.nline)[ol]
-                if len(lineout)>1:
+                lineout = 1 + np.arange(self.model.nline)[ol]
+                
+                if len(lineout) > 1:
                     lineout = lineout[0]
                     
-                g, nls, ann = self.model.removeline(g , ol )
+                g, nls, ann = self.model.removeline(g , ol)
                 break
             
         return f,a,m,F,A,M,EN,LE,ii,g, nls, ann, lineout
@@ -214,6 +225,16 @@ class Integrator:
         return ff,aa,mm,None
         
     def keepgoing(self, time, g , ls ):
+
+        """ 
+            (Q, Adrian) This function seems to halt the integration if:
+
+            a) run out of time
+            b) To few lines.
+            c) Flow though line surpasses limit?
+
+            Confirm
+        """
         
         if ( time >= self.stoptime ):
             return False

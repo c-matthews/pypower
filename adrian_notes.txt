@@ -1,0 +1,6 @@
+Tuesday March 27
+-
+* I am running the small system with euler integration.
+* I've realized that only the load buses (where the random
+process is located) are the only ones to have voltage magnitude variations.
+

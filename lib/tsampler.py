@@ -67,11 +67,13 @@ class TrajSampler:
             if (self.output.SaveLoad):    LS = np.ones( (  self.steps ) )
                         
             # Do burn in
+            # (Q, Adrian): I don't understand the burn-in.
+            # Confirm
 
             nburn = int(self.model.burntime / self.ig.dt)
             _,_,anodes = self.model.removeline( np.ones( self.model.nline ) , 0 )
             if nburn>0:
-                f,a,m,_,_,_,_,_,_,_,_,_,_  = self.ig.adv( f, a , m , nburn , np.ones( self.model.nline ) , anodes )
+                f,a,m,_,_,_,_,_,_,_,_,_,_  = self.ig.adv(f, a, m, nburn, np.ones(self.model.nline), anodes)
 
             time = 0 
             _,ls,anodes = self.model.removeline( gamma , 0 )
@@ -82,14 +84,16 @@ class TrajSampler:
             
             while self.ig.keepgoing( time , gamma, ls  ) :
                  
-                
-                f,a,m,F,A,M,E,L,jj,g,nls, anodes,lo  = self.ig.adv( f, a , m , self.steps - ii , gamma, anodes )
+                print ii
+                # step whole system
+                f,a,m,F,A,M,E,L,jj,g,nls, anodes,lo  = self.ig.adv(f, a, m, self.steps - ii, gamma, anodes)
                 
                 if (self.output.SaveTraj):    FF[:,ii:] = np.copy(F)
                 if (self.output.SaveTraj):    AA[:,ii:] = np.copy(A)
                 if (self.output.SaveTraj):    MM[:,ii:] = np.copy(M)
                 if (self.output.SaveEnergy):    EN[ii:] = np.copy(E)
                 if (self.output.SaveLineEnergy):    LE[:,ii:] = np.copy(L)
+
                 ii += jj
                 time += jj * self.ig.dt
                 
