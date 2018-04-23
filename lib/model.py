@@ -192,8 +192,8 @@ class Model:
         alpha = 0.1
 
 
-        P = self.P
-        Q = self.Q
+        P = np.copy(self.P)
+        Q = np.copy(self.Q)
 
         if True:
             P[self.loadlist - 1] = P[self.loadlist - 1]*(alpha*np.sin(omega*self.time) + 1)
