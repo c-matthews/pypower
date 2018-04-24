@@ -91,7 +91,7 @@ class Integrator:
             if (self.output.SaveTraj):    A[:,ii] = a
             if (self.output.SaveTraj):    M[:,ii] = m
             if (self.output.SaveEnergy):    EN[ii] = en
-            if (self.output.SaveLineEnergy):    LE[:,ii] = le * self.model.oobb
+            if (self.output.SaveLineEnergy):    LE[:,ii] = le# * self.model.oobb
             
             ii += 1
             self.model.time += self.dt

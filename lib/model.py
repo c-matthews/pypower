@@ -188,9 +188,8 @@ class Model:
         #
         # P(t) = P_m * (1.0 + alpha*sin(\omega t))
         # where
-        omega = np.pi/(3600*24)
-        alpha = 0.1
-
+        omega = np.pi/(1.5*3600)
+        alpha = 0.5
 
         P = np.copy(self.P)
         Q = np.copy(self.Q)
@@ -280,6 +279,14 @@ class Model:
         
         isover = np.array(overlim).any()  
         
+        if isover:
+            for i in range(len(le)):
+                if overlim[i]:
+                    print "Line %d is over limit. le: %g, lim: %g" % (i, le[i], self.oobbt[i])
+        if False:
+            print str(160), self.time, le[160], self.oobbt[160]
+
+
         return isover,overlim
     
     def removeline( self, g, ol ):
