@@ -63,6 +63,8 @@ class Output:
         self.LSList = list()
         self.EVList = list()
         self.GraphList = list()
+
+        self.ServedEnergyList = list()
         
         self.lastprinttime = 0
         self.lastprintsteps = 0
@@ -112,7 +114,10 @@ class Output:
             if (self.SaveEvents) and (len(self.EVList)>0):
                 path = self.OutputPath + "/ev." +  str(id)
                 np.savetxt(path, self.EVList[ii] , fmt="%.5e") 
-                
+            
+            if (len(self.ServedEnergyList) > 0):
+                path = self.OutputPath + "/served_energy." +  str(id)
+                np.savetxt(path, self.ServedEnergyList[ii] , fmt="%.5e")             
 
             if (self.SaveGraph) and (len(self.GList)>0):
                 le = self.LEList[ii]
@@ -124,7 +129,7 @@ class Output:
             
         
 
-    def AddOutput(self, id , F, A , M, EN, LE, G, T, LS,EV ):
+    def AddOutput(self, id , F, A , M, EN, LE, G, T, LS,EV, ENERGY_SERVED):
 
         self.IDList.append( id )
 
@@ -149,7 +154,10 @@ class Output:
             self.LSList.append( np.copy( LS[::self.ostep] ) ) 
 
         if (self.SaveEvents) and (np.size(EV)>0):
-            self.EVList.append( np.copy( EV[::self.ostep] ) )  
+            self.EVList.append( np.copy( EV[::self.ostep] ) ) 
+
+        if (np.size(ENERGY_SERVED) > 0):
+            self.ServedEnergyList.append(ENERGY_SERVED[::self.ostep])
             
               
         

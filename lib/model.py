@@ -196,7 +196,12 @@ class Model:
 
         if True:
             P[self.loadlist - 1] = P[self.loadlist - 1]*(alpha*np.sin(omega*self.time) + 1)
-
+ 
+        # compute energy served
+        Pload = np.copy(P)
+        Pload[self.genlist - 1] = 0
+        Pload[self.slacklist - 1] = 0
+        energy_served = -np.sum(Pload[self.nactive])
 
         v = mag * np.exp( 1j * angle )
         
@@ -230,7 +235,7 @@ class Model:
 
         #exit()
 
-        return Energy.real , LE.real, df, da, dm
+        return Energy.real , LE.real, df, da, dm, energy_served
     
     
     
@@ -290,15 +295,19 @@ class Model:
         return isover,overlim
     
     def removeline( self, g, ol ):
+        """
+        ol: over limit vector
+        g: 
+        """
         
         gg = g - ol
         gg = [ int(x) for x in gg ]
         
         inum = np.arange(self.nbus)
         
-        for id,ig in enumerate(gg):
+        for id, ig in enumerate(gg):
             
-            if ig<1: 
+            if ig < 1: 
                 continue
             
             ifrom = self.from_to[ id, 0 ] -1
@@ -318,7 +327,7 @@ class Model:
         nactive =   inum==islack 
         
           
-        for id,ig in enumerate(gg):
+        for id, ig in enumerate(gg):
             
             if ig<1: 
                 continue
@@ -333,10 +342,13 @@ class Model:
                 gg[id] = 0
              
         #print nactive
-        #print self.Pload
-        
+        #print np.sum(self.Pload[nactive])
+
+
         new_ls =  np.sum( self.Pload[ nactive ] ) / np.sum( self.Pload ) 
-        
+
+        self.nactive = nactive
+
         return gg, new_ls, nactive
             
     

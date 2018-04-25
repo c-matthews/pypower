@@ -69,6 +69,9 @@ class Integrator:
         if (self.output.SaveTraj):    F = np.zeros( (len(f), N) )
         if (self.output.SaveTraj):    A = np.zeros( (len(a), N) )
         if (self.output.SaveTraj):    M = np.zeros( (len(m), N) )
+
+        # always save served energy
+        en_serv_hist = np.zeros(N)
         
         if (self.output.SaveEnergy):    EN = np.zeros( N )
         if (self.output.SaveLineEnergy):    LE = np.zeros( (self.model.nline, N) )
@@ -77,14 +80,12 @@ class Integrator:
         io = 0
         nls = -1 
         xtra = None
-        en, le, df, da, dm = self.model.energy(f, a, m, ybus, g) 
-
-        self.time = 0
+        en, le, df, da, dm, energy_served = self.model.energy(f, a, m, ybus, g) 
 
         while ii < N :
             
             f, a, m, xtra = self.step(f, a, m, df, da, dm, xtra, ybus, ann)
-            en, le, df, da, dm = self.model.energy(f, a, m, ybus, g)
+            en, le, df, da, dm, energy_served = self.model.energy(f, a, m, ybus, g)
             io, ol = self.model.checklines(le , g)
             
             if (self.output.SaveTraj):    F[:,ii] = f
@@ -92,7 +93,8 @@ class Integrator:
             if (self.output.SaveTraj):    M[:,ii] = m
             if (self.output.SaveEnergy):    EN[ii] = en
             if (self.output.SaveLineEnergy):    LE[:,ii] = le# * self.model.oobb
-            
+            en_serv_hist[ii] = energy_served
+
             ii += 1
             self.model.time += self.dt
             
@@ -105,7 +107,7 @@ class Integrator:
                 g, nls, ann = self.model.removeline(g , ol)
                 break
             
-        return f,a,m,F,A,M,EN,LE,ii,g, nls, ann, lineout
+        return f,a,m,F,A,M,EN,LE,ii,g, nls, ann, lineout, en_serv_hist
  
 
     def step_heun(self, f, a, m, df,da,dm,xtra, yb, anodes):
