@@ -14,7 +14,8 @@ class Integrator:
           
         self.stoptime = ini.getfloat("integrator","stop_time", 10000.0)  
         self.stoplines = ini.getint("integrator","stop_lines", self.model.nline)  
-        self.stopload = ini.getfloat("integrator","stop_load", 0.0)  
+        self.stopload = ini.getfloat("integrator","stop_load", 0.0) 
+        self.burn = False
         
     def config(self): 
           
@@ -96,7 +97,11 @@ class Integrator:
             en_serv_hist[ii] = energy_served
 
             ii += 1
-            self.model.time += self.dt
+
+            if self.burn is False:
+                self.model.time += self.dt
+            
+            print ii, self.model.time
             
             if io: 
                 lineout = 1 + np.arange(self.model.nline)[ol]

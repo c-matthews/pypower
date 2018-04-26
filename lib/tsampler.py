@@ -74,8 +74,14 @@ class TrajSampler:
 
             nburn = int(self.model.burntime / self.ig.dt)
             _,_,anodes = self.model.removeline( np.ones( self.model.nline ) , 0 )
-            if nburn>0:
+
+
+            # flag so i Know we're in burn-time
+
+            if nburn > 0:
+                self.ig.burn = True
                 f,a,m,_,_,_,_,_,_,_,_,_,_,_  = self.ig.adv(f, a, m, nburn, np.ones(self.model.nline), anodes)
+            self.ig.burn = False
 
             time = 0 
             _,ls,anodes = self.model.removeline( gamma , 0 )

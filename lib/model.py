@@ -232,8 +232,7 @@ class Model:
         dm[ self.slacklist -1 ] = 0
         dm[ self.genlist -1 ] = 0
 
-
-        #exit()
+        print "Time: %g. Energy served: %g" % (self.time, energy_served)
 
         return Energy.real , LE.real, df, da, dm, energy_served
     
