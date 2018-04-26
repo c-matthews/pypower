@@ -92,7 +92,6 @@ class TrajSampler:
             
             while self.ig.keepgoing( time , gamma, ls  ) :
                  
-                print ii
                 # step whole system
                 f,a,m,F,A,M,E,L,jj,g,nls, anodes,lo, en_serv_hist  = self.ig.adv(f, a, m, self.steps - ii, gamma, anodes)
                 
@@ -113,7 +112,7 @@ class TrajSampler:
                 
                 gamma = g
                 if (self.output.SaveGamma):    G[:,ii:] = np.tile(gamma, (self.steps-ii,1) ).T
-                
+
             if (self.output.SaveTime):    T = np.arange(1, ii+1) * self.ig.dt
             if (self.output.SaveTraj):    FF = FF[:,:ii]
             if (self.output.SaveTraj):    AA = AA[:,:ii]

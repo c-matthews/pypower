@@ -100,9 +100,7 @@ class Integrator:
 
             if self.burn is False:
                 self.model.time += self.dt
-            
-            print ii, self.model.time
-            
+                        
             if io: 
                 lineout = 1 + np.arange(self.model.nline)[ol]
                 
