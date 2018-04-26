@@ -74,8 +74,14 @@ class TrajSampler:
 
             nburn = int(self.model.burntime / self.ig.dt)
             _,_,anodes = self.model.removeline( np.ones( self.model.nline ) , 0 )
-            if nburn>0:
+
+
+            # flag so i Know we're in burn-time
+
+            if nburn > 0:
+                self.ig.burn = True
                 f,a,m,_,_,_,_,_,_,_,_,_,_,_  = self.ig.adv(f, a, m, nburn, np.ones(self.model.nline), anodes)
+            self.ig.burn = False
 
             time = 0 
             _,ls,anodes = self.model.removeline( gamma , 0 )
@@ -86,7 +92,6 @@ class TrajSampler:
             
             while self.ig.keepgoing( time , gamma, ls  ) :
                  
-                print ii
                 # step whole system
                 f,a,m,F,A,M,E,L,jj,g,nls, anodes,lo, en_serv_hist  = self.ig.adv(f, a, m, self.steps - ii, gamma, anodes)
                 
@@ -107,7 +112,7 @@ class TrajSampler:
                 
                 gamma = g
                 if (self.output.SaveGamma):    G[:,ii:] = np.tile(gamma, (self.steps-ii,1) ).T
-                
+
             if (self.output.SaveTime):    T = np.arange(1, ii+1) * self.ig.dt
             if (self.output.SaveTraj):    FF = FF[:,:ii]
             if (self.output.SaveTraj):    AA = AA[:,:ii]
