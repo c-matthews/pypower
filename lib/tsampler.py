@@ -82,8 +82,8 @@ class TrajSampler:
                 self.ig.burn = True
                 f,a,m,_,_,_,_,_,_,_,_,_,_,_  = self.ig.adv(f, a, m, nburn, np.ones(self.model.nline), anodes)
             self.ig.burn = False
-
-            time = 0 
+            time = 0
+            self.model.time = 0.0
             _,ls,anodes = self.model.removeline( gamma , 0 )
             enum = 0
             EV,enum = self.addevent(EV,enum,time,ls,gamma,0)

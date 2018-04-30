@@ -100,8 +100,8 @@ class Output:
                 np.savetxt(path, xx , fmt="%.4e") 
 
             if (self.SaveGamma) and (len(self.GList)>0):
-                path = self.OutputPath + "/g." +  str(id)
-                np.savetxt(path, self.GList[ii] , fmt="%d")
+                #path = self.OutputPath + "/g." +  str(id)
+                #np.savetxt(path, self.GList[ii] , fmt="%d")
                 path = self.OutputPath + "/g_last." +  str(id)
                 np.savetxt(path, self.GList[ii][:, -1] , fmt="%d")
 
